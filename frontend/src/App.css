@@ -1,38 +1,211 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f0f4f8;
+  color: #1a202c;
+}
+
 .App {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  color: #2b6cb0;
+}
+
+header p {
+  color: #718096;
+  margin-top: 0.5rem;
+}
+
+/* Main */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Mahlzeit Selector */
+.meal-selector {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.meal-selector label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.meal-selector select {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Audio Recorder */
+.audio-recorder {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.status {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #4a5568;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+.btn-record {
+  background-color: #2b6cb0;
   color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.App-link {
-  color: #61dafb;
+.btn-record:hover {
+  background-color: #2c5282;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.btn-stop {
+  background-color: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-stop:hover {
+  background-color: #c53030;
+}
+
+/* Transcript */
+.transcript {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  color: #4a5568;
+  font-style: italic;
+}
+
+/* Food List */
+.food-list {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.food-list h2 {
+  margin-bottom: 1rem;
+  color: #2b6cb0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  background-color: #ebf4ff;
+  color: #2b6cb0;
+}
+
+td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+tfoot td {
+  border-bottom: none;
+  padding-top: 0.8rem;
+}
+
+/* Confirm Dialog */
+.confirm-dialog {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.confirm-dialog p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-confirm {
+  background-color: #38a169;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-confirm:hover {
+  background-color: #2f855a;
+}
+
+.btn-correct {
+  background-color: #ed8936;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-correct:hover {
+  background-color: #dd6b20;
+}
+
+/* Success */
+.success {
+  background-color: #f0fff4;
+  border: 2px solid #38a169;
+  color: #276749;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
