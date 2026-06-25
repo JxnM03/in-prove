@@ -8,9 +8,11 @@ app.use(express.json());
 
 require('./db/index');
 
-// NEU: Audio Route einbinden
 const audioRoutes = require('./routes/audio');
+const foodRoutes = require('./routes/food');
+
 app.use('/api/audio', audioRoutes);
+app.use('/api/food', foodRoutes);  // NEU
 
 app.get('/', (req, res) => {
     res.json({ message: '✅ in:prove Backend läuft!' });
