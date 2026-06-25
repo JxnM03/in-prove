@@ -11,20 +11,25 @@ const transcribeAudio = async (req, res) => {
             return res.status(400).json({ error: 'Keine Audiodatei gefunden' });
         }
 
-        // Whisper: Audio zu Text
+        console.log('📁 Datei empfangen:', req.file.originalname, req.file.mimetype);
+
+        const oldPath = req.file.path;
+        const newPath = oldPath + '.wav';
+        fs.renameSync(oldPath, newPath);
+
         const transcription = await openai.audio.transcriptions.create({
-            file: fs.createReadStream(req.file.path),
+            file: fs.createReadStream(newPath),
             model: 'whisper-1',
             language: 'de'
         });
 
-        // Temporäre Datei wieder löschen
-        fs.unlinkSync(req.file.path);
+        fs.unlinkSync(newPath);
 
+        console.log('✅ Transkription:', transcription.text);
         res.json({ transcript: transcription.text });
 
     } catch (error) {
-        console.error('Whisper Fehler:', error);
+        console.error('❌ Whisper Fehler:', error.message);
         res.status(500).json({ error: 'Transkription fehlgeschlagen' });
     }
 };
