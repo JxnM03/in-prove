@@ -1,44 +1,25 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import RecordRTC from 'recordrtc';
 
 function AudioRecorder({ onTranscriptReceived }) {
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('Bereit');
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const recorderRef = useRef(null);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      const recorder = new RecordRTC(stream, {
+        type: 'audio',
+        mimeType: 'audio/wav',
+        recorderType: RecordRTC.StereoAudioRecorder,
+        numberOfAudioChannels: 1,
+        desiredSampRate: 16000
+      });
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        setStatus('⏳ Wird verarbeitet...');
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const formData = new FormData();
-        formData.append('audio', blob, 'recording.webm');
-
-        try {
-          const response = await axios.post(
-            'http://localhost:3001/api/audio/transcribe',
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } }
-          );
-          setStatus('✅ Transkription erfolgreich');
-          onTranscriptReceived(response.data.transcript);
-        } catch (error) {
-          console.error('Transkriptionsfehler:', error);
-          setStatus('❌ Fehler bei der Transkription');
-        }
-      };
-
-      mediaRecorder.start();
+      recorderRef.current = { recorder, stream };
+      recorder.startRecording();
       setIsRecording(true);
       setStatus('🔴 Aufnahme läuft...');
     } catch (error) {
@@ -48,13 +29,32 @@ function AudioRecorder({ onTranscriptReceived }) {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream
-        .getTracks()
-        .forEach((track) => track.stop());
+    if (!recorderRef.current) return;
+    const { recorder, stream } = recorderRef.current;
+
+    recorder.stopRecording(async () => {
+      setStatus('⏳ Wird verarbeitet...');
+      const blob = recorder.getBlob();
+
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.wav');
+
+      try {
+        const response = await axios.post(
+          'http://localhost:3001/api/audio/transcribe',
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        setStatus('✅ Transkription erfolgreich');
+        onTranscriptReceived(response.data.transcript);
+      } catch (error) {
+        console.error('Transkriptionsfehler:', error);
+        setStatus('❌ Fehler bei der Transkription');
+      }
+
+      stream.getTracks().forEach((track) => track.stop());
       setIsRecording(false);
-    }
+    });
   };
 
   return (
