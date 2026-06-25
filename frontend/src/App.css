@@ -209,3 +209,51 @@ tfoot td {
   font-size: 1.1rem;
   font-weight: 600;
 }
+/* Meal Type Conflict */
+.meal-conflict {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-left: 4px solid #ed8936;
+}
+
+.meal-conflict p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.conflict-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-conflict {
+  background-color: #2b6cb0;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-conflict:hover {
+  background-color: #2c5282;
+}
+
+.btn-conflict-alt {
+  background-color: #ed8936;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-conflict-alt:hover {
+  background-color: #dd6b20;
+}

@@ -3,6 +3,7 @@ import './App.css';
 import AudioRecorder from './components/AudioRecorder';
 import FoodList from './components/FoodList';
 import ConfirmDialog from './components/ConfirmDialog';
+import MealTypeConflict from './components/MealTypeConflict';
 import axios from 'axios';
 
 function App() {
@@ -12,17 +13,21 @@ function App() {
   const [allClear, setAllClear] = useState(false);
   const [saved, setSaved] = useState(false);
   const [mealType, setMealType] = useState('Mittagessen');
+  const [detectedMealType, setDetectedMealType] = useState(null);
+  const [mealTypeResolved, setMealTypeResolved] = useState(true);
 
-  // Schritt 1: Transkript vom AudioRecorder empfangen → GPT Extraktion
   const handleTranscriptReceived = async (text) => {
     setTranscript(text);
     setSaved(false);
+    setDetectedMealType(null);
+    setMealTypeResolved(true);
 
     try {
       const response = await axios.post(
         'http://localhost:3001/api/food/extract',
         { transcript: text }
       );
+
       setFoodItems(response.data.items);
       setAllClear(response.data.all_quantities_clear);
       setFollowupQuestion(
@@ -30,15 +35,28 @@ function App() {
           ? 'Sind diese Angaben korrekt?'
           : response.data.followup_question
       );
+
+      // NEU: Mahlzeit-Typ Konflikt prüfen
+      const detected = response.data.detected_meal_type;
+      if (detected && detected !== mealType) {
+        setDetectedMealType(detected);
+        setMealTypeResolved(false);  // Konflikt → erst auflösen
+      }
+
     } catch (error) {
       console.error('Extraktionsfehler:', error);
     }
   };
 
-  // Schritt 2: Rückfrage beantwortet → GPT Clarification
+  // NEU: User wählt Mahlzeit-Typ
+  const handleMealTypeChoice = (chosen) => {
+    setMealType(chosen);
+    setDetectedMealType(null);
+    setMealTypeResolved(true);
+  };
+
   const handleClarification = async (text) => {
     setTranscript(text);
-
     try {
       const response = await axios.post(
         'http://localhost:3001/api/food/clarify',
@@ -56,7 +74,6 @@ function App() {
     }
   };
 
-  // Schritt 3: Bestätigen → In Datenbank speichern
   const handleConfirm = async () => {
     try {
       await axios.post('http://localhost:3001/api/log/save', {
@@ -71,12 +88,13 @@ function App() {
     }
   };
 
-  // Schritt 4: Korrigieren → Neue Aufnahme starten
   const handleCorrect = () => {
     setFollowupQuestion(null);
     setFoodItems([]);
     setTranscript('');
     setSaved(false);
+    setDetectedMealType(null);
+    setMealTypeResolved(true);
   };
 
   return (
@@ -87,7 +105,6 @@ function App() {
       </header>
 
       <main>
-        {/* Mahlzeit-Typ auswählen */}
         <div className="meal-selector">
           <label>Mahlzeit: </label>
           <select
@@ -101,31 +118,36 @@ function App() {
           </select>
         </div>
 
-        {/* Aufnahme */}
         <AudioRecorder
           onTranscriptReceived={
             allClear ? handleClarification : handleTranscriptReceived
           }
         />
 
-        {/* Transkript anzeigen */}
         {transcript && (
           <div className="transcript">
             <p>🗣️ <em>"{transcript}"</em></p>
           </div>
         )}
 
-        {/* Erkannte Lebensmittel */}
         <FoodList items={foodItems} />
 
-        {/* Bestätigung oder Rückfrage */}
-        <ConfirmDialog
-          question={followupQuestion}
-          onConfirm={handleConfirm}
-          onCorrect={handleCorrect}
+        {/* NEU: Mahlzeit-Konflikt Dialog */}
+        <MealTypeConflict
+          selected={mealType}
+          detected={detectedMealType}
+          onChoose={handleMealTypeChoice}
         />
 
-        {/* Erfolgsmeldung */}
+        {/* Bestätigung nur anzeigen wenn kein Konflikt offen */}
+        {mealTypeResolved && (
+          <ConfirmDialog
+            question={followupQuestion}
+            onConfirm={handleConfirm}
+            onCorrect={handleCorrect}
+          />
+        )}
+
         {saved && (
           <div className="success">
             ✅ Mahlzeit wurde gespeichert!

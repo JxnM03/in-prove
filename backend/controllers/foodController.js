@@ -20,6 +20,7 @@ const extractFoodItems = async (req, res) => {
                     role: 'system',
                     content: `Du bist ein Ernährungsassistent für Sportler. 
                     Extrahiere aus dem Text alle Lebensmittel und deren Mengen.
+                    Erkenne außerdem den Mahlzeit-Typ (Frühstück, Mittagessen, Abendessen oder Snack) falls erwähnt.
                     Antworte NUR mit einem JSON-Objekt in folgendem Format:
                     {
                         "items": [
@@ -30,6 +31,7 @@ const extractFoodItems = async (req, res) => {
                                 "quantity_unclear": true oder false
                             }
                         ],
+                        "detected_meal_type": "Frühstück" oder "Mittagessen" oder "Abendessen" oder "Snack" oder null,
                         "all_quantities_clear": true oder false,
                         "followup_question": "Rückfrage falls Mengen unklar, sonst null"
                     }`
