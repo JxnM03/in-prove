@@ -6,10 +6,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Datenbankverbindung initialisieren
 require('./db/index');
 
-// Test-Route
+// NEU: Audio Route einbinden
+const audioRoutes = require('./routes/audio');
+app.use('/api/audio', audioRoutes);
+
 app.get('/', (req, res) => {
     res.json({ message: '✅ in:prove Backend läuft!' });
 });
