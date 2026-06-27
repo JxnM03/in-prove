@@ -791,3 +791,121 @@ button {
         opacity: 1;
     }
 }
+.btn-type-toggle {
+    min-height: auto;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 750;
+    transition: 0.15s ease;
+}
+
+.btn-type-toggle:hover,
+.btn-type-toggle.active {
+    color: var(--primary);
+    background: rgba(49, 87, 213, 0.07);
+}
+
+.typed-input-panel {
+    grid-column: 1 / -1;
+    padding-top: 16px;
+    margin-top: 2px;
+    border-top: 1px solid var(--line);
+    animation: typed-input-enter 0.18s ease-out;
+}
+
+.typed-input-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.typed-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.typed-input-row textarea {
+    width: 100%;
+    min-height: 54px;
+    max-height: 130px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font: inherit;
+    line-height: 1.45;
+    resize: vertical;
+    outline: none;
+}
+
+.typed-input-row textarea:focus {
+    border-color: rgba(49, 87, 213, 0.45);
+    box-shadow: 0 0 0 4px rgba(49, 87, 213, 0.1);
+    background: white;
+}
+
+.btn-typed-submit {
+    min-height: 54px;
+    padding: 0 18px;
+    border-radius: 18px;
+    background: var(--surface-soft);
+    color: var(--primary);
+    border: 1px solid rgba(49, 87, 213, 0.22);
+    cursor: pointer;
+    font-weight: 850;
+    transition: 0.15s ease;
+}
+
+.btn-typed-submit:hover:not(:disabled) {
+    background: var(--primary-soft);
+    transform: translateY(-1px);
+}
+
+.btn-typed-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.typed-input-hint {
+    margin-top: 8px;
+    color: var(--muted-soft);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+@keyframes typed-input-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 640px) {
+    .typed-input-row {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-typed-submit {
+        width: 100%;
+    }
+
+    .btn-type-toggle {
+        align-self: center;
+    }
+}

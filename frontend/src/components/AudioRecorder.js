@@ -1,11 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import RecordRTC from 'recordrtc';
 
 function AudioRecorder({ onTranscriptReceived, isClarification = false }) {
     const [isRecording, setIsRecording] = useState(false);
     const [status, setStatus] = useState('Ready');
+    const [isTyping, setIsTyping] = useState(false);
+    const [typedText, setTypedText] = useState('');
+    const [isSubmittingText, setIsSubmittingText] = useState(false);
+
     const recorderRef = useRef(null);
+    const textAreaRef = useRef(null);
+
+    useEffect(() => {
+        if (isTyping && textAreaRef.current) {
+            textAreaRef.current.focus();
+        }
+    }, [isTyping]);
 
     const startRecording = async () => {
         try {
@@ -21,6 +32,8 @@ function AudioRecorder({ onTranscriptReceived, isClarification = false }) {
 
             recorderRef.current = { recorder, stream };
             recorder.startRecording();
+
+            setIsTyping(false);
             setIsRecording(true);
             setStatus('Recording');
         } catch (error) {
@@ -49,7 +62,7 @@ function AudioRecorder({ onTranscriptReceived, isClarification = false }) {
                 );
 
                 setStatus('Transcription successful');
-                onTranscriptReceived(response.data.transcript);
+                await Promise.resolve(onTranscriptReceived(response.data.transcript));
             } catch (error) {
                 console.error('Transcription error:', error);
                 setStatus('Transcription failed');
@@ -60,6 +73,43 @@ function AudioRecorder({ onTranscriptReceived, isClarification = false }) {
             setIsRecording(false);
         });
     };
+
+    const handleTypedSubmit = async (event) => {
+        event.preventDefault();
+
+        const cleanText = typedText.trim();
+
+        if (!cleanText || isSubmittingText) {
+            return;
+        }
+
+        setIsSubmittingText(true);
+        setStatus(isClarification ? 'Sending answer...' : 'Sending text...');
+
+        try {
+            await Promise.resolve(onTranscriptReceived(cleanText));
+
+            setTypedText('');
+            setIsTyping(false);
+            setStatus('Text submitted');
+        } catch (error) {
+            console.error('Typed input error:', error);
+            setStatus('Text input failed');
+        } finally {
+            setIsSubmittingText(false);
+        }
+    };
+
+    const handleTypedKeyDown = (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleTypedSubmit(event);
+        }
+    };
+
+    const typedPlaceholder = isClarification
+        ? 'e.g. The rice was 150 grams.'
+        : 'e.g. I had chicken with rice and broccoli.';
 
     return (
         <section className="audio-recorder card">
@@ -94,7 +144,51 @@ function AudioRecorder({ onTranscriptReceived, isClarification = false }) {
                         ⏹ Stop recording
                     </button>
                 )}
+
+                {!isRecording && (
+                    <button
+                        type="button"
+                        className={isTyping ? 'btn-type-toggle active' : 'btn-type-toggle'}
+                        onClick={() => setIsTyping((current) => !current)}
+                        aria-expanded={isTyping}
+                    >
+                        {isTyping ? 'Hide text input' : 'Type it instead'}
+                    </button>
+                )}
             </div>
+
+            {isTyping && !isRecording && (
+                <form className="typed-input-panel" onSubmit={handleTypedSubmit}>
+                    <label className="typed-input-label" htmlFor="typed-meal-input">
+                        {isClarification ? 'Type your answer' : 'Type your meal'}
+                    </label>
+
+                    <div className="typed-input-row">
+                        <textarea
+                            id="typed-meal-input"
+                            ref={textAreaRef}
+                            value={typedText}
+                            onChange={(event) => setTypedText(event.target.value)}
+                            onKeyDown={handleTypedKeyDown}
+                            placeholder={typedPlaceholder}
+                            rows={2}
+                            disabled={isSubmittingText}
+                        />
+
+                        <button
+                            type="submit"
+                            className="btn-typed-submit"
+                            disabled={!typedText.trim() || isSubmittingText}
+                        >
+                            {isSubmittingText ? 'Sending...' : 'Submit'}
+                        </button>
+                    </div>
+
+                    <p className="typed-input-hint">
+                        Press Enter to submit. Shift + Enter for a new line.
+                    </p>
+                </form>
+            )}
         </section>
     );
 }
