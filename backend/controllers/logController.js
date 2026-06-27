@@ -1,6 +1,20 @@
 const pool = require('../db/index');
 
-const savefoodLog = async (req, res) => {
+const isPositiveNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0;
+};
+
+const isCompleteFoodItem = (item) => {
+    return (
+        item.food_item &&
+        isPositiveNumber(item.quantity_grams) &&
+        isPositiveNumber(item.calories) &&
+        item.quantity_unclear !== true
+    );
+};
+
+const savefoodLog = async(req, res) => {
     try {
         const { athlete_id, meal_type, items, raw_transcript } = req.body;
 
@@ -8,7 +22,12 @@ const savefoodLog = async (req, res) => {
             return res.status(400).json({ error: 'Keine Lebensmittel zum Speichern' });
         }
 
-        // Alle items in die Datenbank schreiben
+        if (items.some((item) => !isCompleteFoodItem(item))) {
+            return res.status(400).json({
+                error: 'Bitte vervollständige alle Mengen und Kalorien vor dem Speichern'
+            });
+        }
+
         const savedItems = [];
 
         for (const item of items) {
@@ -17,8 +36,7 @@ const savefoodLog = async (req, res) => {
                     (athlete_id, meal_type, food_item, quantity_grams, calories, raw_transcript)
                 VALUES 
                     ($1, $2, $3, $4, $5, $6)
-                RETURNING *`,
-                [
+                RETURNING *`, [
                     athlete_id || null,
                     meal_type || null,
                     item.food_item,
@@ -41,10 +59,10 @@ const savefoodLog = async (req, res) => {
     }
 };
 
-const getFoodLogs = async (req, res) => {
+const getFoodLogs = async(req, res) => {
     try {
         const result = await pool.query(
-            `SELECT * FROM food_logs ORDER BY logged_at DESC`
+            `SELECT * FROM food_logs ORDER BY logged_at DESC, id DESC`
         );
         res.json(result.rows);
 
@@ -54,4 +72,37 @@ const getFoodLogs = async (req, res) => {
     }
 };
 
-module.exports = { savefoodLog, getFoodLogs };
+const deleteFoodLogs = async(req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Keine IDs zum Löschen übergeben' });
+        }
+
+        const validIds = ids
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id) && id > 0);
+
+        if (validIds.length === 0) {
+            return res.status(400).json({ error: 'Keine gültigen IDs zum Löschen übergeben' });
+        }
+
+        const result = await pool.query(
+            `DELETE FROM food_logs
+             WHERE id = ANY($1::int[])
+             RETURNING *`, [validIds]
+        );
+
+        res.json({
+            message: `🗑️ ${result.rowCount} Einträge gelöscht`,
+            deleted: result.rows
+        });
+
+    } catch (error) {
+        console.error('Lösch-Fehler:', error);
+        res.status(500).json({ error: 'Löschen fehlgeschlagen' });
+    }
+};
+
+module.exports = { savefoodLog, getFoodLogs, deleteFoodLogs };
