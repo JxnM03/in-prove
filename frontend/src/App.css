@@ -909,3 +909,126 @@ button {
         align-self: center;
     }
 }
+
+/* Login */
+.login-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 36px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-header p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.98rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.login-field label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.login-field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font: inherit;
+    outline: none;
+}
+
+.login-field input:focus {
+    border-color: rgba(49, 87, 213, 0.45);
+    box-shadow: 0 0 0 4px rgba(49, 87, 213, 0.1);
+}
+
+.login-error {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.login-btn {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.login-demo-hint {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.8;
+}
+
+/* Header athlete + logout */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.header-athlete {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.btn-logout {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    color: var(--text);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 0.85rem;
+    transition: 0.15s ease;
+}
+
+.btn-logout:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}

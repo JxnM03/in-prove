@@ -4,6 +4,7 @@ import AudioRecorder from './components/AudioRecorder';
 import FoodList from './components/FoodList';
 import ConfirmDialog from './components/ConfirmDialog';
 import MealTypeConflict from './components/MealTypeConflict';
+import Login from './components/Login';
 import axios from 'axios';
 
 const MEAL_TYPE_LABELS = {
@@ -53,13 +54,8 @@ const areAllFoodItemsResolved = (items) => {
 
 const formatDateTime = (value) => {
     if (!value) return 'Unknown';
-
     const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return 'Unknown';
-    }
-
+    if (Number.isNaN(date.getTime())) return 'Unknown';
     return date.toLocaleString('en-US', {
         day: '2-digit',
         month: '2-digit',
@@ -70,42 +66,26 @@ const formatDateTime = (value) => {
 
 const formatMonthLabel = (timestamp) => {
     const date = new Date(timestamp);
-
-    if (Number.isNaN(date.getTime())) {
-        return 'Unknown time period';
-    }
-
-    return date.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric'
-    });
+    if (Number.isNaN(date.getTime())) return 'Unknown time period';
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 };
 
 const buildMealGroupKey = (row) => {
     const date = row.logged_at ? new Date(row.logged_at) : new Date();
-
     const roundedToMinute = Number.isNaN(date.getTime())
         ? 'unknown-time'
         : Math.floor(date.getTime() / 60000);
-
-    return [
-        row.meal_type || 'Mahlzeit',
-        row.raw_transcript || '',
-        roundedToMinute
-    ].join('|');
+    return [row.meal_type || 'Mahlzeit', row.raw_transcript || '', roundedToMinute].join('|');
 };
 
 const formatDbLogsToEntries = (rows) => {
     if (!Array.isArray(rows)) return [];
-
     const groups = new Map();
 
     rows.forEach((row) => {
         const key = buildMealGroupKey(row);
-
         if (!groups.has(key)) {
             const sortTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
-
             groups.set(key, {
                 id: key,
                 logIds: [],
@@ -119,9 +99,7 @@ const formatDbLogsToEntries = (rows) => {
         }
 
         const group = groups.get(key);
-
         group.logIds.push(row.id);
-
         group.items.push({
             id: row.id,
             food_item: row.food_item,
@@ -129,7 +107,6 @@ const formatDbLogsToEntries = (rows) => {
             calories: row.calories ? Number(row.calories) : null,
             quantity_unclear: false
         });
-
         group.totalCalories += Number(row.calories) || 0;
 
         const rowTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
@@ -141,15 +118,11 @@ const formatDbLogsToEntries = (rows) => {
 
     return Array.from(groups.values())
         .sort((a, b) => b.sortTime - a.sortTime)
-        .map((entry) => ({
-            ...entry,
-            totalCalories: Math.round(entry.totalCalories)
-        }));
+        .map((entry) => ({ ...entry, totalCalories: Math.round(entry.totalCalories) }));
 };
 
 const filterEntries = (entries, filters) => {
     const now = new Date();
-
     return entries.filter((entry) => {
         const entryDate = new Date(entry.sortTime || 0);
 
@@ -157,39 +130,30 @@ const filterEntries = (entries, filters) => {
             const sameMonth =
                 entryDate.getMonth() === now.getMonth() &&
                 entryDate.getFullYear() === now.getFullYear();
-
             if (!sameMonth) return false;
         }
 
         if (filters.period === 'last3Months') {
             const threeMonthsAgo = new Date(now);
             threeMonthsAgo.setMonth(now.getMonth() - 3);
-
             if (entryDate < threeMonthsAgo) return false;
         }
 
         if (filters.period === 'last6Months') {
             const sixMonthsAgo = new Date(now);
             sixMonthsAgo.setMonth(now.getMonth() - 6);
-
             if (entryDate < sixMonthsAgo) return false;
         }
 
-        if (filters.mealType !== 'all' && entry.mealType !== filters.mealType) {
-            return false;
-        }
+        if (filters.mealType !== 'all' && entry.mealType !== filters.mealType) return false;
 
         const search = filters.search.trim().toLowerCase();
-
         if (search) {
             const searchableText = [
                 entry.mealType,
                 entry.transcript,
                 ...entry.items.map((item) => item.food_item)
-            ]
-                .join(' ')
-                .toLowerCase();
-
+            ].join(' ').toLowerCase();
             if (!searchableText.includes(search)) return false;
         }
 
@@ -199,60 +163,39 @@ const filterEntries = (entries, filters) => {
 
 const groupEntriesByMonth = (entries) => {
     const groups = [];
-
     entries.forEach((entry) => {
         const label = formatMonthLabel(entry.sortTime || 0);
         const lastGroup = groups[groups.length - 1];
-
         if (!lastGroup || lastGroup.label !== label) {
-            groups.push({
-                label,
-                entries: [entry]
-            });
+            groups.push({ label, entries: [entry] });
         } else {
             lastGroup.entries.push(entry);
         }
     });
-
     return groups;
 };
 
 function EntryHistory({
-    entries,
-    filters,
-    setFilters,
-    onResetFilters,
-    onNewEntry,
-    onRefresh,
-    onDeleteEntry
+    entries, filters, setFilters, onResetFilters, onNewEntry, onRefresh, onDeleteEntry
 }) {
     const filteredEntries = useMemo(() => filterEntries(entries, filters), [entries, filters]);
     const groupedEntries = useMemo(() => groupEntriesByMonth(filteredEntries), [filteredEntries]);
-
     const mealTypeOptions = useMemo(() => {
         return Array.from(new Set(entries.map((entry) => entry.mealType))).filter(Boolean);
     }, [entries]);
 
     const hasActiveFilters =
-        filters.period !== 'all' ||
-        filters.mealType !== 'all' ||
-        filters.search.trim() !== '';
+        filters.period !== 'all' || filters.mealType !== 'all' || filters.search.trim() !== '';
 
     if (entries.length === 0) {
         return (
             <section className="empty-state card">
                 <div className="empty-icon">📋</div>
                 <h2>No entries found</h2>
-                <p>
-                    Saved meals will appear here as soon as they are loaded from the database.
-                </p>
+                <p>Saved meals will appear here as soon as they are loaded from the database.</p>
                 <div className="empty-actions">
-                    <button className="btn-primary" onClick={onNewEntry}>
-                        Track first meal
-                    </button>
-                    <button className="btn-secondary" onClick={onRefresh}>
-                        Reload entries
-                    </button>
+                    <button className="btn-primary" onClick={onNewEntry}>Track first meal</button>
+                    <button className="btn-secondary" onClick={onRefresh}>Reload entries</button>
                 </div>
             </section>
         );
@@ -265,14 +208,9 @@ function EntryHistory({
                     <p className="eyebrow">History</p>
                     <h2>Saved entries</h2>
                 </div>
-
                 <div className="entry-actions">
-                    <button className="btn-secondary" onClick={onRefresh}>
-                        ↻ Reload
-                    </button>
-                    <button className="btn-secondary" onClick={onNewEntry}>
-                        + New entry
-                    </button>
+                    <button className="btn-secondary" onClick={onRefresh}>↻ Reload</button>
+                    <button className="btn-secondary" onClick={onNewEntry}>+ New entry</button>
                 </div>
             </div>
 
@@ -282,9 +220,7 @@ function EntryHistory({
                         <span>Time period</span>
                         <select
                             value={filters.period}
-                            onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, period: e.target.value }))
-                            }
+                            onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}
                         >
                             <option value="all">All</option>
                             <option value="thisMonth">This month</option>
@@ -292,64 +228,46 @@ function EntryHistory({
                             <option value="last6Months">Last 6 months</option>
                         </select>
                     </label>
-
                     <label>
                         <span>Meal</span>
                         <select
                             value={filters.mealType}
-                            onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, mealType: e.target.value }))
-                            }
+                            onChange={(e) => setFilters((prev) => ({ ...prev, mealType: e.target.value }))}
                         >
                             <option value="all">All</option>
                             {mealTypeOptions.map((mealType) => (
-                                <option value={mealType} key={mealType}>
-                                    {getMealTypeLabel(mealType)}
-                                </option>
+                                <option value={mealType} key={mealType}>{getMealTypeLabel(mealType)}</option>
                             ))}
                         </select>
                     </label>
-
                     <label>
                         <span>Search</span>
                         <input
                             value={filters.search}
-                            onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, search: e.target.value }))
-                            }
+                            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                             placeholder="e.g. rice, avocado..."
                         />
                     </label>
                 </div>
-
                 {hasActiveFilters && (
-                    <button className="filter-reset" onClick={onResetFilters}>
-                        Reset filters
-                    </button>
+                    <button className="filter-reset" onClick={onResetFilters}>Reset filters</button>
                 )}
             </div>
 
-            <div className="entry-count">
-                {filteredEntries.length} of {entries.length} entries
-            </div>
+            <div className="entry-count">{filteredEntries.length} of {entries.length} entries</div>
 
             {filteredEntries.length === 0 ? (
                 <section className="empty-state card">
                     <div className="empty-icon">🔎</div>
                     <h2>No results</h2>
                     <p>Reset the filters or change your search.</p>
-                    <button className="btn-primary" onClick={onResetFilters}>
-                        Reset filters
-                    </button>
+                    <button className="btn-primary" onClick={onResetFilters}>Reset filters</button>
                 </section>
             ) : (
                 <div className="entry-list">
                     {groupedEntries.map((group) => (
                         <div className="month-group" key={group.label}>
-                            <div className="month-separator">
-                                <span>{group.label}</span>
-                            </div>
-
+                            <div className="month-separator"><span>{group.label}</span></div>
                             {group.entries.map((entry) => (
                                 <article className="entry-card card" key={entry.id}>
                                     <div className="entry-header">
@@ -359,26 +277,19 @@ function EntryHistory({
                                         </div>
                                         <strong>{entry.totalCalories} kcal</strong>
                                     </div>
-
                                     <div className="entry-items">
                                         {entry.items.map((item, index) => (
                                             <div className="entry-item" key={`${entry.id}-${index}`}>
                                                 <span>{item.food_item}</span>
                                                 <span>
                                                     {item.quantity_grams || '?'} g
-                                                    {item.calories
-                                                        ? ` · ${Math.round(item.calories)} kcal`
-                                                        : ''}
+                                                    {item.calories ? ` · ${Math.round(item.calories)} kcal` : ''}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
-
                                     <div className="entry-footer">
-                                        <button
-                                            className="btn-delete"
-                                            onClick={() => onDeleteEntry(entry)}
-                                        >
+                                        <button className="btn-delete" onClick={() => onDeleteEntry(entry)}>
                                             🗑️ Delete
                                         </button>
                                     </div>
@@ -393,6 +304,16 @@ function EntryHistory({
 }
 
 function App() {
+    // ── Auth State ──
+    const [athlete, setAthlete] = useState(() => {
+        try {
+            const stored = localStorage.getItem('inproveAthlete');
+            return stored ? JSON.parse(stored) : null;
+        } catch { return null; }
+    });
+    const [token, setToken] = useState(() => localStorage.getItem('inproveToken') || null);
+
+    // ── Meal Tracking State ──
     const [transcript, setTranscript] = useState('');
     const [foodItems, setFoodItems] = useState([]);
     const [followupQuestion, setFollowupQuestion] = useState(null);
@@ -404,50 +325,46 @@ function App() {
     const [detectedMealType, setDetectedMealType] = useState(null);
     const [mealTypeResolved, setMealTypeResolved] = useState(true);
     const [activeTab, setActiveTab] = useState('track');
-    const [filters, setFilters] = useState({
-        period: 'all',
-        mealType: 'all',
-        search: ''
-    });
+    const [filters, setFilters] = useState({ period: 'all', mealType: 'all', search: '' });
+    const [savedEntries, setSavedEntries] = useState([]);
 
-    const [savedEntries, setSavedEntries] = useState(() => {
-        try {
-            const storedEntries = localStorage.getItem('inproveSavedEntries');
-            return storedEntries ? JSON.parse(storedEntries) : [];
-        } catch (error) {
-            console.error('Could not load saved entries:', error);
-            return [];
-        }
-    });
+    // ── Login / Logout ──
+    const handleLogin = (newToken, newAthlete) => {
+        setToken(newToken);
+        setAthlete(newAthlete);
+        localStorage.setItem('inproveToken', newToken);
+        localStorage.setItem('inproveAthlete', JSON.stringify(newAthlete));
+    };
 
+    const handleLogout = () => {
+        setToken(null);
+        setAthlete(null);
+        setSavedEntries([]);
+        localStorage.removeItem('inproveToken');
+        localStorage.removeItem('inproveAthlete');
+    };
+
+    // ── Load entries filtered by athlete ──
     const loadSavedEntriesFromDatabase = useCallback(async () => {
+        if (!athlete) return;
         try {
-            const response = await axios.get('http://localhost:3001/api/log/all');
-            const dbEntries = formatDbLogsToEntries(response.data);
-
-            setSavedEntries(dbEntries);
-            localStorage.setItem('inproveSavedEntries', JSON.stringify(dbEntries));
+            const response = await axios.get(
+                `http://localhost:3001/api/log/all?athlete_id=${athlete.id}`
+            );
+            setSavedEntries(formatDbLogsToEntries(response.data));
         } catch (error) {
             console.error('Could not load database entries:', error);
         }
-    }, []);
+    }, [athlete]);
 
     useEffect(() => {
-        loadSavedEntriesFromDatabase();
-    }, [loadSavedEntriesFromDatabase]);
+        if (athlete) loadSavedEntriesFromDatabase();
+    }, [athlete, loadSavedEntriesFromDatabase]);
 
-    useEffect(() => {
-        try {
-            localStorage.setItem('inproveSavedEntries', JSON.stringify(savedEntries));
-        } catch (error) {
-            console.error('Could not save entries:', error);
-        }
-    }, [savedEntries]);
-
+    // ── Food extraction ──
     const applyFoodResponse = (data) => {
         const items = data.items || [];
         const clear = Boolean(data.all_quantities_clear) && areAllFoodItemsResolved(items);
-
         setFoodItems(items);
         setAllClear(clear);
         setAwaitingClarification(!clear);
@@ -456,7 +373,6 @@ function App() {
                 ? 'Are these details correct?'
                 : translateDisplayText(data.followup_question) || 'Which quantity is still missing?'
         );
-
         return { clear, items };
     };
 
@@ -474,9 +390,7 @@ function App() {
                 'http://localhost:3001/api/food/extract',
                 { transcript: text }
             );
-
             applyFoodResponse(response.data);
-
             const detected = response.data.detected_meal_type;
             if (detected && detected !== mealType) {
                 setDetectedMealType(detected);
@@ -488,10 +402,7 @@ function App() {
     };
 
     const handleClarification = async (text) => {
-        const updatedTranscript = transcript
-            ? `${transcript}\nAnswer: ${text}`
-            : text;
-
+        const updatedTranscript = transcript ? `${transcript}\nAnswer: ${text}` : text;
         setTranscript(updatedTranscript);
         setSaved(false);
         setActiveTab('track');
@@ -500,12 +411,8 @@ function App() {
         try {
             const response = await axios.post(
                 'http://localhost:3001/api/food/clarify',
-                {
-                    transcript: text,
-                    previousItems: foodItems
-                }
+                { transcript: text, previousItems: foodItems }
             );
-
             applyFoodResponse(response.data);
         } catch (error) {
             console.error('Clarification error:', error);
@@ -533,20 +440,16 @@ function App() {
     };
 
     const handleConfirm = async () => {
-        if (!allClear || !areAllFoodItemsResolved(foodItems)) {
-            console.warn('Save blocked: quantities are still missing.');
-            return;
-        }
+        if (!allClear || !areAllFoodItemsResolved(foodItems)) return;
 
         try {
             await axios.post('http://localhost:3001/api/log/save', {
+                athlete_id: athlete?.id,
                 meal_type: mealType,
                 items: foodItems,
                 raw_transcript: transcript
             });
-
             await loadSavedEntriesFromDatabase();
-
             setSaved(true);
             setFollowupQuestion(null);
             setAwaitingClarification(false);
@@ -562,14 +465,12 @@ function App() {
         const confirmed = window.confirm(
             `Delete "${getMealTypeLabel(entry.mealType)}" from ${entry.createdAt}?`
         );
-
         if (!confirmed) return;
 
         try {
             await axios.delete('http://localhost:3001/api/log/delete', {
                 data: { ids: entry.logIds }
             });
-
             await loadSavedEntriesFromDatabase();
         } catch (error) {
             console.error('Delete error:', error);
@@ -581,21 +482,23 @@ function App() {
         setActiveTab('track');
     };
 
-    const resetFilters = () => {
-        setFilters({
-            period: 'all',
-            mealType: 'all',
-            search: ''
-        });
-    };
+    const resetFilters = () => setFilters({ period: 'all', mealType: 'all', search: '' });
 
     const canConfirm = allClear && areAllFoodItemsResolved(foodItems);
+
+    // ── Render Login if not authenticated ──
+    if (!athlete || !token) {
+        return <Login onLogin={handleLogin} />;
+    }
 
     return (
         <div className="app-shell">
             <header className="app-header">
                 <div className="brand-mark">in:prove</div>
-                <p>Smart food tracking for athletes</p>
+                <div className="header-athlete">
+                    <span>👤 {athlete.name}</span>
+                    <button className="btn-logout" onClick={handleLogout}>Logout</button>
+                </div>
             </header>
 
             <div className="app-container">
@@ -622,7 +525,6 @@ function App() {
                                 <p className="eyebrow">Current meal</p>
                                 <h2>{getMealTypeLabel(mealType)}</h2>
                             </div>
-
                             <select
                                 value={mealType}
                                 onChange={(e) => handleMealTypeChoice(e.target.value)}
@@ -665,11 +567,7 @@ function App() {
                             />
                         )}
 
-                        {saved && (
-                            <div className="success card">
-                                ✅ Meal saved.
-                            </div>
-                        )}
+                        {saved && <div className="success card">✅ Meal saved.</div>}
                     </main>
                 ) : (
                     <EntryHistory

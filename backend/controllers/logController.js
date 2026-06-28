@@ -14,7 +14,7 @@ const isCompleteFoodItem = (item) => {
     );
 };
 
-const savefoodLog = async(req, res) => {
+const savefoodLog = async (req, res) => {
     try {
         const { athlete_id, meal_type, items, raw_transcript } = req.body;
 
@@ -36,7 +36,8 @@ const savefoodLog = async(req, res) => {
                     (athlete_id, meal_type, food_item, quantity_grams, calories, raw_transcript)
                 VALUES 
                     ($1, $2, $3, $4, $5, $6)
-                RETURNING *`, [
+                RETURNING *`,
+                [
                     athlete_id || null,
                     meal_type || null,
                     item.food_item,
@@ -59,11 +60,21 @@ const savefoodLog = async(req, res) => {
     }
 };
 
-const getFoodLogs = async(req, res) => {
+const getFoodLogs = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT * FROM food_logs ORDER BY logged_at DESC, id DESC`
-        );
+        const { athlete_id } = req.query;
+
+        let query = 'SELECT * FROM food_logs';
+        const params = [];
+
+        if (athlete_id) {
+            query += ' WHERE athlete_id = $1';
+            params.push(athlete_id);
+        }
+
+        query += ' ORDER BY logged_at DESC, id DESC';
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
 
     } catch (error) {
@@ -72,7 +83,7 @@ const getFoodLogs = async(req, res) => {
     }
 };
 
-const deleteFoodLogs = async(req, res) => {
+const deleteFoodLogs = async (req, res) => {
     try {
         const { ids } = req.body;
 
@@ -89,9 +100,8 @@ const deleteFoodLogs = async(req, res) => {
         }
 
         const result = await pool.query(
-            `DELETE FROM food_logs
-             WHERE id = ANY($1::int[])
-             RETURNING *`, [validIds]
+            `DELETE FROM food_logs WHERE id = ANY($1::int[]) RETURNING *`,
+            [validIds]
         );
 
         res.json({
