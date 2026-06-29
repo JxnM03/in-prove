@@ -1,17 +1,32 @@
 import React from 'react';
 
+const MEAL_TYPE_LABELS = {
+  Frühstück: 'Breakfast',
+  Mittagessen: 'Lunch',
+  Abendessen: 'Dinner',
+  Snack: 'Snack'
+};
+
+const getMealTypeLabel = (mealType) => {
+  return MEAL_TYPE_LABELS[mealType] || mealType;
+};
+
 function MealTypeConflict({ selected, detected, onChoose }) {
   if (!detected || detected === selected) return null;
 
   return (
     <div className="meal-conflict">
-      <p>🤖 Du hast <strong>"{detected}"</strong> erwähnt, aber <strong>"{selected}"</strong> ist ausgewählt. Was möchtest du speichern?</p>
+      <p>
+        🤖 You mentioned <strong>"{getMealTypeLabel(detected)}"</strong>, but{' '}
+        <strong>"{getMealTypeLabel(selected)}"</strong> is selected. What would
+        you like to save?
+      </p>
       <div className="conflict-buttons">
         <button onClick={() => onChoose(selected)} className="btn-conflict">
-          📋 {selected} (Dropdown)
+          📋 {getMealTypeLabel(selected)} (Dropdown)
         </button>
         <button onClick={() => onChoose(detected)} className="btn-conflict-alt">
-          🎤 {detected} (Gesagt)
+          🎤 {getMealTypeLabel(detected)} (Spoken)
         </button>
       </div>
     </div>

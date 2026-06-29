@@ -3,6 +3,9 @@
 CREATE TABLE IF NOT EXISTS athletes (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    daily_calorie_goal INTEGER DEFAULT 2500,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
