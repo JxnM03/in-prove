@@ -101,6 +101,9 @@ const formatDbLogsToEntries = (rows) => {
             food_item: row.food_item,
             quantity_grams: row.quantity_grams ? Number(row.quantity_grams) : null,
             calories: row.calories ? Number(row.calories) : null,
+            protein_grams: row.protein_grams ? Number(row.protein_grams) : null,
+            carbs_grams: row.carbs_grams ? Number(row.carbs_grams) : null,
+            fat_grams: row.fat_grams ? Number(row.fat_grams) : null,
             quantity_unclear: false
         });
         group.totalCalories += Number(row.calories) || 0;
@@ -352,10 +355,14 @@ function EntryHistory({
                                         {entry.items.map((item, index) => (
                                             <div className="entry-item" key={`${entry.id}-${index}`}>
                                                 <span>{item.food_item}</span>
-                                                <span>
-                                                    {item.quantity_grams || '?'} g
-                                                    {item.calories ? ` · ${Math.round(item.calories)} kcal` : ''}
-                                                </span>
+                                                <div className="entry-item-right">
+                                                    <span>{item.quantity_grams || '?'} g · {item.calories ? `${Math.round(item.calories)} kcal` : '—'}</span>
+                                                    <div className="entry-item-macros">
+                                                        {item.protein_grams ? <span style={{ color: '#3157d5' }}>P {Math.round(item.protein_grams)}g</span> : null}
+                                                        {item.carbs_grams ? <span style={{ color: '#0ea5e9' }}>C {Math.round(item.carbs_grams)}g</span> : null}
+                                                        {item.fat_grams ? <span style={{ color: '#8b5cf6' }}>F {Math.round(item.fat_grams)}g</span> : null}
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -386,6 +393,9 @@ function App() {
     const [calorieGoal, setCalorieGoal] = useState(2500);
     const [consumedCalories, setConsumedCalories] = useState(0);
     const [mealCount, setMealCount] = useState(0);
+    const [macros, setMacros] = useState({ protein: 30, carbs: 40, fat: 30 });
+    const [consumedMacros, setConsumedMacros] = useState({ protein: 0, carbs: 0, fat: 0 });
+    const [macroGoals, setMacroGoals] = useState({ protein: 0, carbs: 0, fat: 0 });
 
     // ── Meal Tracking State ──
     const [transcript, setTranscript] = useState('');
@@ -425,9 +435,25 @@ function App() {
             axios.get(`http://localhost:3001/api/athletes/today-calories?athlete_id=${athlete.id}`),
             axios.get(`http://localhost:3001/api/athletes/goal?athlete_id=${athlete.id}`)
         ]);
+        const cal = goalRes.data.daily_calorie_goal;
         setConsumedCalories(todayRes.data.total_calories);
         setMealCount(todayRes.data.meal_count);
-        setCalorieGoal(goalRes.data.daily_calorie_goal);
+        setCalorieGoal(cal);
+        setConsumedMacros({
+            protein: todayRes.data.total_protein,
+            carbs: todayRes.data.total_carbs,
+            fat: todayRes.data.total_fat
+        });
+        setMacros({
+            protein: goalRes.data.macro_protein_pct,
+            carbs: goalRes.data.macro_carbs_pct,
+            fat: goalRes.data.macro_fat_pct
+        });
+        setMacroGoals({
+            protein: Math.round((goalRes.data.macro_protein_pct / 100) * cal / 4),
+            carbs: Math.round((goalRes.data.macro_carbs_pct / 100) * cal / 4),
+            fat: Math.round((goalRes.data.macro_fat_pct / 100) * cal / 9)
+        });
     } catch (error) {
         console.error('Could not load today calories:', error);
     }
@@ -625,6 +651,8 @@ function App() {
                             calorieGoal={calorieGoal}
                             consumedCalories={consumedCalories}
                             mealCount={mealCount}
+                            consumedMacros={consumedMacros}
+                            macroGoals={macroGoals}
                         />
                         <section className="meal-card card">
                             <div>
@@ -689,8 +717,28 @@ function App() {
                     <Settings
                         athlete={athlete}
                         calorieGoal={calorieGoal}
+                        macros={macros}
                         onGoalUpdated={(newGoal) => {
                             setCalorieGoal(newGoal);
+                            setMacroGoals({
+                                protein: Math.round((macros.protein / 100) * newGoal / 4),
+                                carbs: Math.round((macros.carbs / 100) * newGoal / 4),
+                                fat: Math.round((macros.fat / 100) * newGoal / 9)
+                            });
+                            loadTodayCalories();
+                        }}
+                        onMacrosUpdated={(updatedAthlete) => {
+                            const newProtein = updatedAthlete.macro_protein_pct;
+                            const newCarbs = updatedAthlete.macro_carbs_pct;
+                            const newFat = updatedAthlete.macro_fat_pct;
+                            setMacros({ protein: newProtein, carbs: newCarbs, fat: newFat });
+                            setMacroGoals({
+                                protein: Math.round((newProtein / 100) * calorieGoal / 4),
+                                carbs: Math.round((newCarbs / 100) * calorieGoal / 4),
+                                fat: Math.round((newFat / 100) * calorieGoal / 9)
+                            });
+                            console.log('onMacrosUpdated called:', newProtein, newCarbs, newFat);
+                            console.log('calorieGoal at update time:', calorieGoal);
                             loadTodayCalories();
                         }}
                     />

@@ -325,9 +325,7 @@ button {
 
 .nutrition-summary {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
 }
 
 .nutrition-summary div {
@@ -1224,4 +1222,134 @@ button {
     .filter-grid.advanced {
         grid-template-columns: 1fr;
     }
+}
+
+/* Macro circles */
+.macro-circles {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.macro-circle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.macro-svg {
+    width: 100%;
+    max-width: 100px;
+}
+
+.macro-circle-label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.macro-circle-goal {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Macro settings */
+.macro-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.macro-input-group label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.macro-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.macro-label.protein { color: #3157d5; }
+.macro-label.carbs { color: #0ea5e9; }
+.macro-label.fat { color: #8b5cf6; }
+
+.macro-gram-hint {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2px;
+}
+
+.macro-total {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.macro-total.ok {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.macro-total.error {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+@media (max-width: 640px) {
+    .macro-inputs {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Macro tags in food cards */
+.food-macros {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.macro-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+}
+
+.macro-tag-label {
+    font-weight: 800;
+    opacity: 0.7;
+}
+
+/* Entry item macros */
+.entry-item {
+    align-items: flex-start;
+}
+
+.entry-item-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    text-align: right;
+}
+
+.entry-item-macros {
+    display: flex;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
 }

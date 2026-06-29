@@ -33,9 +33,9 @@ const savefoodLog = async (req, res) => {
         for (const item of items) {
             const result = await pool.query(
                 `INSERT INTO food_logs 
-                    (athlete_id, meal_type, food_item, quantity_grams, calories, raw_transcript)
+                    (athlete_id, meal_type, food_item, quantity_grams, calories, protein_grams, carbs_grams, fat_grams, raw_transcript)
                 VALUES 
-                    ($1, $2, $3, $4, $5, $6)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING *`,
                 [
                     athlete_id || null,
@@ -43,6 +43,9 @@ const savefoodLog = async (req, res) => {
                     item.food_item,
                     item.quantity_grams || null,
                     item.calories || null,
+                    item.protein_grams || null,
+                    item.carbs_grams || null,
+                    item.fat_grams || null,
                     raw_transcript || null
                 ]
             );
