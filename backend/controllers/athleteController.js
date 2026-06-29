@@ -28,6 +28,35 @@ const updateCalorieGoal = async (req, res) => {
     }
 };
 
+const updateMacros = async (req, res) => {
+    try {
+        const { athlete_id, macro_protein_pct, macro_carbs_pct, macro_fat_pct } = req.body;
+
+        if (!athlete_id) {
+            return res.status(400).json({ error: 'Missing athlete_id' });
+        }
+
+        const total = macro_protein_pct + macro_carbs_pct + macro_fat_pct;
+        if (total !== 100) {
+            return res.status(400).json({ error: 'Macro percentages must add up to 100' });
+        }
+
+        const result = await pool.query(
+            `UPDATE athletes 
+             SET macro_protein_pct = $1, macro_carbs_pct = $2, macro_fat_pct = $3
+             WHERE id = $4
+             RETURNING id, name, username, daily_calorie_goal, macro_protein_pct, macro_carbs_pct, macro_fat_pct`,
+            [macro_protein_pct, macro_carbs_pct, macro_fat_pct, athlete_id]
+        );
+
+        res.json({ athlete: result.rows[0] });
+
+    } catch (error) {
+        console.error('Update macros error:', error);
+        res.status(500).json({ error: 'Could not update macros' });
+    }
+};
+
 const getTodayCalories = async (req, res) => {
     try {
         const { athlete_id } = req.query;
@@ -39,16 +68,22 @@ const getTodayCalories = async (req, res) => {
         const result = await pool.query(
             `SELECT 
                 COALESCE(SUM(calories), 0) AS total_calories,
+                COALESCE(SUM(protein_grams), 0) AS total_protein,
+                COALESCE(SUM(carbs_grams), 0) AS total_carbs,
+                COALESCE(SUM(fat_grams), 0) AS total_fat,
                 COUNT(DISTINCT DATE_TRUNC('minute', logged_at)) AS meal_count
-             FROM food_logs
-             WHERE athlete_id = $1
-             AND logged_at >= CURRENT_DATE
-             AND logged_at < CURRENT_DATE + INTERVAL '1 day'`,
+            FROM food_logs
+            WHERE athlete_id = $1
+            AND logged_at >= CURRENT_DATE
+            AND logged_at < CURRENT_DATE + INTERVAL '1 day'`,
             [athlete_id]
         );
 
         res.json({
             total_calories: Math.round(Number(result.rows[0].total_calories)),
+            total_protein: Math.round(Number(result.rows[0].total_protein)),
+            total_carbs: Math.round(Number(result.rows[0].total_carbs)),
+            total_fat: Math.round(Number(result.rows[0].total_fat)),
             meal_count: Number(result.rows[0].meal_count)
         });
 
@@ -67,11 +102,20 @@ const getAthleteGoal = async (req, res) => {
         }
 
         const result = await pool.query(
-            `SELECT daily_calorie_goal FROM athletes WHERE id = $1`,
+            'SELECT daily_calorie_goal, macro_protein_pct, macro_carbs_pct, macro_fat_pct FROM athletes WHERE id = $1',
             [athlete_id]
         );
 
-        res.json({ daily_calorie_goal: result.rows[0].daily_calorie_goal });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Athlete not found' });
+        }
+
+        res.json({
+            daily_calorie_goal: result.rows[0].daily_calorie_goal,
+            macro_protein_pct: result.rows[0].macro_protein_pct,
+            macro_carbs_pct: result.rows[0].macro_carbs_pct,
+            macro_fat_pct: result.rows[0].macro_fat_pct
+        });
 
     } catch (error) {
         console.error('Get goal error:', error);
@@ -79,4 +123,4 @@ const getAthleteGoal = async (req, res) => {
     }
 };
 
-module.exports = { updateCalorieGoal, getTodayCalories, getAthleteGoal };
+module.exports = { updateCalorieGoal, updateMacros, getTodayCalories, getAthleteGoal };
