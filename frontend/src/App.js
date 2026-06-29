@@ -66,12 +66,6 @@ const formatDateTime = (value) => {
     });
 };
 
-const formatMonthLabel = (timestamp) => {
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) return 'Unknown time period';
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-};
-
 const buildMealGroupKey = (row) => {
     const date = row.logged_at ? new Date(row.logged_at) : new Date();
     const roundedToMinute = Number.isNaN(date.getTime())
@@ -125,8 +119,33 @@ const formatDbLogsToEntries = (rows) => {
 
 const filterEntries = (entries, filters) => {
     const now = new Date();
+
+    const startOfDay = (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    };
+
+    const endOfDay = (date) => {
+        const d = new Date(date);
+        d.setHours(23, 59, 59, 999);
+        return d;
+    };
+
     return entries.filter((entry) => {
         const entryDate = new Date(entry.sortTime || 0);
+
+        // Schnellfilter
+        if (filters.period === 'today') {
+            if (entryDate < startOfDay(now) || entryDate > endOfDay(now)) return false;
+        }
+
+        if (filters.period === 'thisWeek') {
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+            weekStart.setHours(0, 0, 0, 0);
+            if (entryDate < weekStart) return false;
+        }
 
         if (filters.period === 'thisMonth') {
             const sameMonth =
@@ -135,20 +154,22 @@ const filterEntries = (entries, filters) => {
             if (!sameMonth) return false;
         }
 
-        if (filters.period === 'last3Months') {
-            const threeMonthsAgo = new Date(now);
-            threeMonthsAgo.setMonth(now.getMonth() - 3);
-            if (entryDate < threeMonthsAgo) return false;
+        // Erweiterte Suche: Datumsbereich
+        if (filters.period === 'custom') {
+            if (filters.dateFrom) {
+                const from = startOfDay(new Date(filters.dateFrom));
+                if (entryDate < from) return false;
+            }
+            if (filters.dateTo) {
+                const to = endOfDay(new Date(filters.dateTo));
+                if (entryDate > to) return false;
+            }
         }
 
-        if (filters.period === 'last6Months') {
-            const sixMonthsAgo = new Date(now);
-            sixMonthsAgo.setMonth(now.getMonth() - 6);
-            if (entryDate < sixMonthsAgo) return false;
-        }
-
+        // Mahlzeit-Typ
         if (filters.mealType !== 'all' && entry.mealType !== filters.mealType) return false;
 
+        // Textsuche
         const search = filters.search.trim().toLowerCase();
         if (search) {
             const searchableText = [
@@ -163,13 +184,32 @@ const filterEntries = (entries, filters) => {
     });
 };
 
-const groupEntriesByMonth = (entries) => {
+const formatDayLabel = (timestamp) => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+    const now = new Date();
+    const isToday =
+        date.getDate() === now.getDate() &&
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear();
+    const isYesterday =
+        date.getDate() === now.getDate() - 1 &&
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear();
+    if (isToday) return 'Today';
+    if (isYesterday) return 'Yesterday';
+    return date.toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+};
+
+const groupEntriesByDay = (entries) => {
     const groups = [];
     entries.forEach((entry) => {
-        const label = formatMonthLabel(entry.sortTime || 0);
+        const date = new Date(entry.sortTime || 0);
+        const label = formatDayLabel(entry.sortTime || 0);
+        const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         const lastGroup = groups[groups.length - 1];
-        if (!lastGroup || lastGroup.label !== label) {
-            groups.push({ label, entries: [entry] });
+        if (!lastGroup || lastGroup.dayKey !== dayKey) {
+            groups.push({ label, dayKey, entries: [entry] });
         } else {
             lastGroup.entries.push(entry);
         }
@@ -181,13 +221,14 @@ function EntryHistory({
     entries, filters, setFilters, onResetFilters, onNewEntry, onRefresh, onDeleteEntry
 }) {
     const filteredEntries = useMemo(() => filterEntries(entries, filters), [entries, filters]);
-    const groupedEntries = useMemo(() => groupEntriesByMonth(filteredEntries), [filteredEntries]);
+    const groupedEntries = useMemo(() => groupEntriesByDay(filteredEntries), [filteredEntries]);
     const mealTypeOptions = useMemo(() => {
         return Array.from(new Set(entries.map((entry) => entry.mealType))).filter(Boolean);
     }, [entries]);
 
     const hasActiveFilters =
-        filters.period !== 'all' || filters.mealType !== 'all' || filters.search.trim() !== '';
+        filters.period !== 'today' || filters.mealType !== 'all' ||
+        filters.search.trim() !== '' || filters.dateFrom !== '' || filters.dateTo !== '';
 
     if (entries.length === 0) {
         return (
@@ -217,44 +258,72 @@ function EntryHistory({
             </div>
 
             <div className="filter-card card">
-                <div className="filter-grid">
-                    <label>
-                        <span>Time period</span>
-                        <select
-                            value={filters.period}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}
+                {/* Schnellfilter */}
+                <div className="quick-filters">
+                    {[
+                        { value: 'today', label: 'Today' },
+                        { value: 'thisWeek', label: 'This week' },
+                        { value: 'thisMonth', label: 'This month' },
+                        { value: 'all', label: 'All time' },
+                        { value: 'custom', label: '📅 Custom' },
+                    ].map((opt) => (
+                        <button
+                            key={opt.value}
+                            className={filters.period === opt.value ? 'quick-filter-btn active' : 'quick-filter-btn'}
+                            onClick={() => setFilters((prev) => ({ ...prev, period: opt.value }))}
                         >
-                            <option value="all">All</option>
-                            <option value="thisMonth">This month</option>
-                            <option value="last3Months">Last 3 months</option>
-                            <option value="last6Months">Last 6 months</option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>Meal</span>
-                        <select
-                            value={filters.mealType}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, mealType: e.target.value }))}
-                        >
-                            <option value="all">All</option>
-                            {mealTypeOptions.map((mealType) => (
-                                <option value={mealType} key={mealType}>{getMealTypeLabel(mealType)}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        <span>Search</span>
-                        <input
-                            value={filters.search}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                            placeholder="e.g. rice, avocado..."
-                        />
-                    </label>
+                            {opt.label}
+                        </button>
+                    ))}
                 </div>
-                {hasActiveFilters && (
-                    <button className="filter-reset" onClick={onResetFilters}>Reset filters</button>
+
+                {/* Erweiterte Suche */}
+                {filters.period === 'custom' && (
+                    <div className="filter-grid advanced">
+                        <label>
+                            <span>From</span>
+                            <input
+                                type="date"
+                                value={filters.dateFrom}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                            />
+                        </label>
+                        <label>
+                            <span>To</span>
+                            <input
+                                type="date"
+                                value={filters.dateTo}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+                            />
+                        </label>
+                        <label>
+                            <span>Meal type</span>
+                            <select
+                                value={filters.mealType}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, mealType: e.target.value }))}
+                            >
+                                <option value="all">All</option>
+                                {mealTypeOptions.map((mealType) => (
+                                    <option value={mealType} key={mealType}>{getMealTypeLabel(mealType)}</option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Search</span>
+                            <input
+                                type="text"
+                                value={filters.search}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                                placeholder="e.g. pizza, chicken..."
+                            />
+                        </label>
+                    </div>
                 )}
-            </div>
+
+    {hasActiveFilters && filters.period !== 'today' && (
+        <button className="filter-reset" onClick={onResetFilters}>Reset filters</button>
+    )}
+</div>
 
             <div className="entry-count">{filteredEntries.length} of {entries.length} entries</div>
 
@@ -268,7 +337,7 @@ function EntryHistory({
             ) : (
                 <div className="entry-list">
                     {groupedEntries.map((group) => (
-                        <div className="month-group" key={group.label}>
+                        <div className="month-group" key={group.dayKey}>
                             <div className="month-separator"><span>{group.label}</span></div>
                             {group.entries.map((entry) => (
                                 <article className="entry-card card" key={entry.id}>
@@ -330,7 +399,7 @@ function App() {
     const [detectedMealType, setDetectedMealType] = useState(null);
     const [mealTypeResolved, setMealTypeResolved] = useState(true);
     const [activeTab, setActiveTab] = useState('track');
-    const [filters, setFilters] = useState({ period: 'all', mealType: 'all', search: '' });
+    const [filters, setFilters] = useState({ period: 'today', mealType: 'all', search: '', dateFrom: '', dateTo: '' });
     const [savedEntries, setSavedEntries] = useState([]);
 
     // ── Login / Logout ──
@@ -507,7 +576,7 @@ function App() {
         setActiveTab('track');
     };
 
-    const resetFilters = () => setFilters({ period: 'all', mealType: 'all', search: '' });
+    const resetFilters = () => setFilters({ period: 'today', mealType: 'all', search: '', dateFrom: '', dateTo: '' });
 
     const canConfirm = allClear && areAllFoodItemsResolved(foodItems);
 
