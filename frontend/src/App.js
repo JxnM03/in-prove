@@ -221,8 +221,13 @@ const groupEntriesByDay = (entries) => {
 };
 
 function EntryHistory({
-    entries, filters, setFilters, onResetFilters, onNewEntry, onRefresh, onDeleteEntry
+    entries, filters, setFilters, onResetFilters, onNewEntry, onRefresh, onDeleteEntry, onUpdateItem, onDeleteItem, onAddItemToEntry
 }) {
+    const [editingItemId, setEditingItemId] = useState(null);
+    const [editingItemValue, setEditingItemValue] = useState('');
+    const [addingToEntryId, setAddingToEntryId] = useState(null);
+    const [addingToEntryText, setAddingToEntryText] = useState('');
+    const [isAddingToEntry, setIsAddingToEntry] = useState(false);
     const filteredEntries = useMemo(() => filterEntries(entries, filters), [entries, filters]);
     const groupedEntries = useMemo(() => groupEntriesByDay(filteredEntries), [filteredEntries]);
     const mealTypeOptions = useMemo(() => {
@@ -354,23 +359,120 @@ function EntryHistory({
                                     <div className="entry-items">
                                         {entry.items.map((item, index) => (
                                             <div className="entry-item" key={`${entry.id}-${index}`}>
-                                                <span>{item.food_item}</span>
+                                                <span className="entry-item-name">{item.food_item}</span>
                                                 <div className="entry-item-right">
-                                                    <span>{item.quantity_grams || '?'} g · {item.calories ? `${Math.round(item.calories)} kcal` : '—'}</span>
+                                                    {editingItemId === item.id ? (
+                                                        <div className="inline-edit-row">
+                                                            <input
+                                                                type="number"
+                                                                className="inline-edit-input"
+                                                                value={editingItemValue}
+                                                                onChange={(e) => setEditingItemValue(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        onUpdateItem(item.id, Number(editingItemValue));
+                                                                        setEditingItemId(null);
+                                                                    }
+                                                                    if (e.key === 'Escape') setEditingItemId(null);
+                                                                }}
+                                                                autoFocus
+                                                                min="1"
+                                                            />
+                                                            <span className="inline-edit-unit">g</span>
+                                                            <button
+                                                                className="btn-inline-save"
+                                                                onClick={() => {
+                                                                    onUpdateItem(item.id, Number(editingItemValue));
+                                                                    setEditingItemId(null);
+                                                                }}
+                                                            >✓</button>
+                                                            <button
+                                                                className="btn-inline-cancel"
+                                                                onClick={() => setEditingItemId(null)}
+                                                            >✕</button>
+                                                        </div>
+                                                    ) : (
+                                                        <span
+                                                            className="editable-quantity"
+                                                            onClick={() => {
+                                                                setEditingItemId(item.id);
+                                                                setEditingItemValue(String(item.quantity_grams || ''));
+                                                            }}
+                                                        >
+                                                            {item.quantity_grams || '?'} g ✏️
+                                                        </span>
+                                                    )}
+                                                    <span>{item.calories ? `${Math.round(item.calories)} kcal` : '—'}</span>
                                                     <div className="entry-item-macros">
                                                         {item.protein_grams ? <span style={{ color: '#3157d5' }}>P {Math.round(item.protein_grams)}g</span> : null}
                                                         {item.carbs_grams ? <span style={{ color: '#0ea5e9' }}>C {Math.round(item.carbs_grams)}g</span> : null}
                                                         {item.fat_grams ? <span style={{ color: '#8b5cf6' }}>F {Math.round(item.fat_grams)}g</span> : null}
                                                     </div>
                                                 </div>
+                                                <button
+                                                    className="btn-delete-item"
+                                                    onClick={() => onDeleteItem(item.id)}
+                                                    title="Delete item"
+                                                >
+                                                    🗑️
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
                                     <div className="entry-footer">
+                                        <button
+                                            className="btn-secondary"
+                                            onClick={() => setAddingToEntryId(addingToEntryId === entry.id ? null : entry.id)}
+                                        >
+                                            {addingToEntryId === entry.id ? '✕ Cancel' : '+ Add item'}
+                                        </button>
                                         <button className="btn-delete" onClick={() => onDeleteEntry(entry)}>
                                             🗑️ Delete
                                         </button>
                                     </div>
+
+                                    {addingToEntryId === entry.id && (
+                                        <div className="add-item-panel">
+                                            <p className="eyebrow" style={{ marginBottom: '8px' }}>Add to this meal</p>
+                                            <div className="typed-input-row">
+                                                <textarea
+                                                    className="add-item-input"
+                                                    value={addingToEntryText}
+                                                    onChange={(e) => setAddingToEntryText(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            if (!addingToEntryText.trim() || isAddingToEntry) return;
+                                                            setIsAddingToEntry(true);
+                                                            onAddItemToEntry(addingToEntryText, entry).finally(() => {
+                                                                setIsAddingToEntry(false);
+                                                                setAddingToEntryText('');
+                                                                setAddingToEntryId(null);
+                                                            });
+                                                        }
+                                                    }}
+                                                    placeholder="e.g. 1 banana, 200ml orange juice..."
+                                                    rows={2}
+                                                    disabled={isAddingToEntry}
+                                                />
+                                                <button
+                                                    className="btn-typed-submit"
+                                                    disabled={!addingToEntryText.trim() || isAddingToEntry}
+                                                    onClick={() => {
+                                                        if (!addingToEntryText.trim() || isAddingToEntry) return;
+                                                        setIsAddingToEntry(true);
+                                                        onAddItemToEntry(addingToEntryText, entry).finally(() => {
+                                                            setIsAddingToEntry(false);
+                                                            setAddingToEntryText('');
+                                                            setAddingToEntryId(null);
+                                                        });
+                                                    }}
+                                                >
+                                                    {isAddingToEntry ? 'Adding...' : 'Add'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </article>
                             ))}
                         </div>
@@ -558,6 +660,18 @@ function App() {
         setMealTypeResolved(true);
     };
 
+    const handleAddItem = async (text, currentItems) => {
+        try {
+            const response = await axios.post(
+                'http://localhost:3001/api/food/clarify',
+                { transcript: text, previousItems: currentItems }
+            );
+            applyFoodResponse(response.data);
+        } catch (error) {
+            console.error('Add item error:', error);
+        }
+    };
+
     const handleConfirm = async () => {
         if (!allClear || !areAllFoodItemsResolved(foodItems)) return;
 
@@ -597,6 +711,65 @@ function App() {
         }
     };
 
+    const handleUpdateItem = async (itemId, newQuantity) => {
+        try {
+            await axios.patch('http://localhost:3001/api/log/update-item', {
+                id: itemId,
+                quantity_grams: newQuantity
+            });
+            await loadSavedEntriesFromDatabase();
+            await loadTodayCalories();
+        } catch (error) {
+            console.error('Update item error:', error);
+        }
+    };
+
+    const handleDeleteItem = async (itemId) => {
+        const confirmed = window.confirm('Delete this food item?');
+        if (!confirmed) return;
+        try {
+            await axios.delete('http://localhost:3001/api/log/delete-item', {
+                data: { id: itemId }
+            });
+            await loadSavedEntriesFromDatabase();
+            await loadTodayCalories();
+        } catch (error) {
+            console.error('Delete item error:', error);
+        }
+    };
+
+    const handleAddItemToEntry = async (text, entry) => {
+        try {
+            const response = await axios.post(
+                'http://localhost:3001/api/food/extract',
+                { transcript: text }
+            );
+
+            const newItems = response.data.items.filter(
+                (item) => item.quantity_grams && item.calories
+            );
+
+            if (newItems.length === 0) return;
+
+            // logged_at vom bestehenden Entry übernehmen
+            const offsetMs = new Date().getTimezoneOffset() * -60 * 1000;
+            const entryTimestamp = new Date(entry.sortTime + offsetMs).toISOString();
+
+            await axios.post('http://localhost:3001/api/log/save', {
+                athlete_id: athlete?.id,
+                meal_type: entry.mealType,
+                items: newItems,
+                raw_transcript: entry.transcript,
+                logged_at: entryTimestamp
+            });
+
+            await loadSavedEntriesFromDatabase();
+            await loadTodayCalories();
+        } catch (error) {
+            console.error('Add item to entry error:', error);
+        }
+    };
+
     const handleNewEntry = () => {
         resetCurrentMeal();
         setActiveTab('track');
@@ -625,7 +798,10 @@ function App() {
                 <nav className="tab-bar">
                     <button
                         className={activeTab === 'track' ? 'tab active' : 'tab'}
-                        onClick={() => setActiveTab('track')}
+                        onClick={() => {
+                            setActiveTab('track');
+                            loadTodayCalories();
+                        }}
                     >
                         Track
                     </button>
@@ -684,7 +860,12 @@ function App() {
                             </section>
                         )}
 
-                        <FoodList items={foodItems} isUpdating={isClarifying} />
+                        <FoodList
+                            items={foodItems}
+                            isUpdating={isClarifying}
+                            onItemsChange={(updatedItems) => setFoodItems(updatedItems)}
+                            onAddItem={handleAddItem}
+                        />
 
                         <MealTypeConflict
                             selected={mealType}
@@ -712,6 +893,9 @@ function App() {
                         onNewEntry={handleNewEntry}
                         onRefresh={loadSavedEntriesFromDatabase}
                         onDeleteEntry={handleDeleteEntry}
+                        onUpdateItem={handleUpdateItem}
+                        onDeleteItem={handleDeleteItem}
+                        onAddItemToEntry={handleAddItemToEntry}
                     />
                 ) : (
                     <Settings

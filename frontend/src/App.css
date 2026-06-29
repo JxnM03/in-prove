@@ -1353,3 +1353,111 @@ button {
     font-size: 0.78rem;
     font-weight: 700;
 }
+
+/* Inline editing */
+.editable-quantity {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    color: var(--primary);
+}
+
+.editable-quantity:hover {
+    color: var(--primary-dark);
+}
+
+.inline-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.inline-edit-input {
+    width: 70px;
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.inline-edit-unit {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.btn-inline-save {
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--success);
+    color: white;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+.btn-inline-cancel {
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+/* Add item panel */
+.add-item-panel {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.add-item-input {
+    width: 100%;
+    min-height: 54px;
+    max-height: 130px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font: inherit;
+    line-height: 1.45;
+    resize: vertical;
+    outline: none;
+}
+
+.add-item-input:focus {
+    border-color: rgba(49, 87, 213, 0.45);
+    box-shadow: 0 0 0 4px rgba(49, 87, 213, 0.1);
+}
+
+/* Entry item editing */
+.entry-item-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-delete-item {
+    flex-shrink: 0;
+    min-height: 30px;
+    padding: 0 8px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: 0.15s ease;
+}
+
+.btn-delete-item:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+}
