@@ -1032,3 +1032,150 @@ button {
     color: #b91c1c;
     border-color: #fecaca;
 }
+
+/* Check-in Card */
+.checkin-card {
+    padding: 22px;
+}
+
+.checkin-header h2 {
+    margin-top: 4px;
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+}
+
+.checkin-question {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.98rem;
+}
+
+.checkin-progress {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.halfcircle-svg {
+    width: 200px;
+    height: 110px;
+}
+
+.checkin-stats {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+}
+
+.checkin-stats div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.checkin-stats span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.checkin-stats strong {
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+}
+
+.checkin-meals {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+/* Settings */
+.settings-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-card {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-card h3 {
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+}
+
+.settings-username {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.settings-desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+
+.settings-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.settings-input-row input {
+    width: 120px;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+    outline: none;
+    text-align: center;
+}
+
+.settings-input-row input:focus {
+    border-color: rgba(49, 87, 213, 0.45);
+    box-shadow: 0 0 0 4px rgba(49, 87, 213, 0.1);
+}
+
+.settings-unit {
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.settings-error {
+    color: #b91c1c;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.settings-success {
+    color: var(--success);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+/* Tab-bar 3 columns */
+.tab-bar {
+    grid-template-columns: 1fr 1fr 1fr;
+}

@@ -5,6 +5,8 @@ import FoodList from './components/FoodList';
 import ConfirmDialog from './components/ConfirmDialog';
 import MealTypeConflict from './components/MealTypeConflict';
 import Login from './components/Login';
+import CheckIn from './components/CheckIn';
+import Settings from './components/Settings';
 import axios from 'axios';
 
 const MEAL_TYPE_LABELS = {
@@ -312,6 +314,9 @@ function App() {
         } catch { return null; }
     });
     const [token, setToken] = useState(() => localStorage.getItem('inproveToken') || null);
+    const [calorieGoal, setCalorieGoal] = useState(2500);
+    const [consumedCalories, setConsumedCalories] = useState(0);
+    const [mealCount, setMealCount] = useState(0);
 
     // ── Meal Tracking State ──
     const [transcript, setTranscript] = useState('');
@@ -344,6 +349,21 @@ function App() {
         localStorage.removeItem('inproveAthlete');
     };
 
+    const loadTodayCalories = useCallback(async () => {
+    if (!athlete) return;
+    try {
+        const [todayRes, goalRes] = await Promise.all([
+            axios.get(`http://localhost:3001/api/athletes/today-calories?athlete_id=${athlete.id}`),
+            axios.get(`http://localhost:3001/api/athletes/goal?athlete_id=${athlete.id}`)
+        ]);
+        setConsumedCalories(todayRes.data.total_calories);
+        setMealCount(todayRes.data.meal_count);
+        setCalorieGoal(goalRes.data.daily_calorie_goal);
+    } catch (error) {
+        console.error('Could not load today calories:', error);
+    }
+    }, [athlete]);
+
     // ── Load entries filtered by athlete ──
     const loadSavedEntriesFromDatabase = useCallback(async () => {
         if (!athlete) return;
@@ -360,6 +380,10 @@ function App() {
     useEffect(() => {
         if (athlete) loadSavedEntriesFromDatabase();
     }, [athlete, loadSavedEntriesFromDatabase]);
+
+    useEffect(() => {
+    if (athlete) loadTodayCalories();
+    }, [athlete, loadTodayCalories]);
 
     // ── Food extraction ──
     const applyFoodResponse = (data) => {
@@ -450,6 +474,7 @@ function App() {
                 raw_transcript: transcript
             });
             await loadSavedEntriesFromDatabase();
+            await loadTodayCalories();
             setSaved(true);
             setFollowupQuestion(null);
             setAwaitingClarification(false);
@@ -516,10 +541,22 @@ function App() {
                         Entries
                         <span>{savedEntries.length}</span>
                     </button>
+                    <button
+                        className={activeTab === 'settings' ? 'tab active' : 'tab'}
+                        onClick={() => setActiveTab('settings')}
+                    >
+                        Settings
+                    </button>
                 </nav>
 
                 {activeTab === 'track' ? (
                     <main className="track-layout">
+                        <CheckIn
+                            athlete={athlete}
+                            calorieGoal={calorieGoal}
+                            consumedCalories={consumedCalories}
+                            mealCount={mealCount}
+                        />
                         <section className="meal-card card">
                             <div>
                                 <p className="eyebrow">Current meal</p>
@@ -569,7 +606,7 @@ function App() {
 
                         {saved && <div className="success card">✅ Meal saved.</div>}
                     </main>
-                ) : (
+                ) : activeTab === 'entries' ? (
                     <EntryHistory
                         entries={savedEntries}
                         filters={filters}
@@ -578,6 +615,15 @@ function App() {
                         onNewEntry={handleNewEntry}
                         onRefresh={loadSavedEntriesFromDatabase}
                         onDeleteEntry={handleDeleteEntry}
+                    />
+                ) : (
+                    <Settings
+                        athlete={athlete}
+                        calorieGoal={calorieGoal}
+                        onGoalUpdated={(newGoal) => {
+                            setCalorieGoal(newGoal);
+                            loadTodayCalories();
+                        }}
                     />
                 )}
             </div>
