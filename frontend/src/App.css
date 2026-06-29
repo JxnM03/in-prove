@@ -1179,3 +1179,49 @@ button {
 .tab-bar {
     grid-template-columns: 1fr 1fr 1fr;
 }
+
+/* Quick filters */
+.quick-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.quick-filter-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.88rem;
+    transition: 0.15s ease;
+}
+
+.quick-filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(49, 87, 213, 0.25);
+}
+
+.quick-filter-btn:hover:not(.active) {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-color: rgba(49, 87, 213, 0.3);
+}
+
+.filter-grid.advanced {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 640px) {
+    .filter-grid.advanced {
+        grid-template-columns: 1fr;
+    }
+}
