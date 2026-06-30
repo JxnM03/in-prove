@@ -14,6 +14,11 @@ const isCompleteFoodItem = (item) => {
     );
 };
 
+const isValidLoggedAt = (value) => {
+    if (!value) return false;
+    return !Number.isNaN(new Date(value).getTime());
+};
+
 const savefoodLog = async (req, res) => {
     try {
         const { athlete_id, meal_type, items, raw_transcript, logged_at } = req.body;
@@ -29,26 +34,46 @@ const savefoodLog = async (req, res) => {
         }
 
         const savedItems = [];
+        const shouldPreserveLoggedAt = isValidLoggedAt(logged_at);
 
         for (const item of items) {
+            const columns = [
+                'athlete_id',
+                'meal_type',
+                'food_item',
+                'quantity_grams',
+                'calories',
+                'protein_grams',
+                'carbs_grams',
+                'fat_grams',
+                'raw_transcript'
+            ];
+
+            const values = [
+                athlete_id || null,
+                meal_type || null,
+                item.food_item,
+                item.quantity_grams || null,
+                item.calories || null,
+                item.protein_grams || null,
+                item.carbs_grams || null,
+                item.fat_grams || null,
+                raw_transcript || null
+            ];
+
+            if (shouldPreserveLoggedAt) {
+                columns.push('logged_at');
+                values.push(logged_at);
+            }
+
+            const placeholders = values.map((_, index) => `$${index + 1}`);
             const result = await pool.query(
                 `INSERT INTO food_logs 
-                    (athlete_id, meal_type, food_item, quantity_grams, calories, protein_grams, carbs_grams, fat_grams, raw_transcript, logged_at)
+                    (${columns.join(', ')})
                 VALUES 
-                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    (${placeholders.join(', ')})
                 RETURNING *`,
-                [
-                    athlete_id || null,
-                    meal_type || null,
-                    item.food_item,
-                    item.quantity_grams || null,
-                    item.calories || null,
-                    item.protein_grams || null,
-                    item.carbs_grams || null,
-                    item.fat_grams || null,
-                    raw_transcript || null,
-                    logged_at || null
-                ]
+                values
             );
             savedItems.push(result.rows[0]);
         }

@@ -54,10 +54,17 @@ const areAllFoodItemsResolved = (items) => {
     return Array.isArray(items) && items.length > 0 && items.every(hasResolvedQuantity);
 };
 
+const parseTimestamp = (value) => {
+    if (!value) return null;
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? null : timestamp;
+};
+
 const formatDateTime = (value) => {
-    if (!value) return 'Unknown';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Unknown';
+    const timestamp = parseTimestamp(value);
+    if (timestamp === null) return 'Unknown date';
+
+    const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
         day: '2-digit',
         month: '2-digit',
@@ -67,10 +74,11 @@ const formatDateTime = (value) => {
 };
 
 const buildMealGroupKey = (row) => {
-    const date = row.logged_at ? new Date(row.logged_at) : new Date();
-    const roundedToMinute = Number.isNaN(date.getTime())
-        ? 'unknown-time'
-        : Math.floor(date.getTime() / 60000);
+    const timestamp = parseTimestamp(row.logged_at);
+    const roundedToMinute = timestamp === null
+        ? `unknown-time-${row.id || ''}`
+        : Math.floor(timestamp / 60000);
+
     return [row.meal_type || 'Mahlzeit', row.raw_transcript || '', roundedToMinute].join('|');
 };
 
@@ -80,8 +88,9 @@ const formatDbLogsToEntries = (rows) => {
 
     rows.forEach((row) => {
         const key = buildMealGroupKey(row);
+        const timestamp = parseTimestamp(row.logged_at);
+
         if (!groups.has(key)) {
-            const sortTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
             groups.set(key, {
                 id: key,
                 logIds: [],
@@ -90,7 +99,7 @@ const formatDbLogsToEntries = (rows) => {
                 transcript: row.raw_transcript || '',
                 totalCalories: 0,
                 createdAt: formatDateTime(row.logged_at),
-                sortTime
+                sortTime: timestamp
             });
         }
 
@@ -108,15 +117,14 @@ const formatDbLogsToEntries = (rows) => {
         });
         group.totalCalories += Number(row.calories) || 0;
 
-        const rowTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
-        if (rowTime > group.sortTime) {
-            group.sortTime = rowTime;
+        if (timestamp !== null && (group.sortTime === null || timestamp > group.sortTime)) {
+            group.sortTime = timestamp;
             group.createdAt = formatDateTime(row.logged_at);
         }
     });
 
     return Array.from(groups.values())
-        .sort((a, b) => b.sortTime - a.sortTime)
+        .sort((a, b) => (b.sortTime ?? -Infinity) - (a.sortTime ?? -Infinity))
         .map((entry) => ({ ...entry, totalCalories: Math.round(entry.totalCalories) }));
 };
 
@@ -136,14 +144,16 @@ const filterEntries = (entries, filters) => {
     };
 
     return entries.filter((entry) => {
-        const entryDate = new Date(entry.sortTime || 0);
+        const entryDate = Number.isFinite(entry.sortTime) ? new Date(entry.sortTime) : null;
 
         // Schnellfilter
         if (filters.period === 'today') {
+            if (!entryDate) return false;
             if (entryDate < startOfDay(now) || entryDate > endOfDay(now)) return false;
         }
 
         if (filters.period === 'thisWeek') {
+            if (!entryDate) return false;
             const weekStart = new Date(now);
             weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
             weekStart.setHours(0, 0, 0, 0);
@@ -151,6 +161,7 @@ const filterEntries = (entries, filters) => {
         }
 
         if (filters.period === 'thisMonth') {
+            if (!entryDate) return false;
             const sameMonth =
                 entryDate.getMonth() === now.getMonth() &&
                 entryDate.getFullYear() === now.getFullYear();
@@ -159,6 +170,7 @@ const filterEntries = (entries, filters) => {
 
         // Erweiterte Suche: Datumsbereich
         if (filters.period === 'custom') {
+            if (!entryDate) return false;
             if (filters.dateFrom) {
                 const from = startOfDay(new Date(filters.dateFrom));
                 if (entryDate < from) return false;
@@ -188,8 +200,11 @@ const filterEntries = (entries, filters) => {
 };
 
 const formatDayLabel = (timestamp) => {
+    if (timestamp === null) return 'Unknown date';
+
     const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) return 'Unknown';
+    if (Number.isNaN(date.getTime())) return 'Unknown date';
+
     const now = new Date();
     const isToday =
         date.getDate() === now.getDate() &&
@@ -207,9 +222,12 @@ const formatDayLabel = (timestamp) => {
 const groupEntriesByDay = (entries) => {
     const groups = [];
     entries.forEach((entry) => {
-        const date = new Date(entry.sortTime || 0);
-        const label = formatDayLabel(entry.sortTime || 0);
-        const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        const date = Number.isFinite(entry.sortTime) ? new Date(entry.sortTime) : null;
+        const label = formatDayLabel(entry.sortTime);
+        const dayKey = date && !Number.isNaN(date.getTime())
+            ? `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+            : 'unknown-date';
+
         const lastGroup = groups[groups.length - 1];
         if (!lastGroup || lastGroup.dayKey !== dayKey) {
             groups.push({ label, dayKey, entries: [entry] });
@@ -751,17 +769,20 @@ function App() {
 
             if (newItems.length === 0) return;
 
-            // logged_at vom bestehenden Entry übernehmen
-            const offsetMs = new Date().getTimezoneOffset() * -60 * 1000;
-            const entryTimestamp = new Date(entry.sortTime + offsetMs).toISOString();
-
-            await axios.post('http://localhost:3001/api/log/save', {
+            const payload = {
                 athlete_id: athlete?.id,
                 meal_type: entry.mealType,
                 items: newItems,
-                raw_transcript: entry.transcript,
-                logged_at: entryTimestamp
-            });
+                raw_transcript: entry.transcript
+            };
+
+            if (Number.isFinite(entry.sortTime)) {
+                // Preserve the existing entry date when adding to a dated history entry.
+                const offsetMs = new Date().getTimezoneOffset() * -60 * 1000;
+                payload.logged_at = new Date(entry.sortTime + offsetMs).toISOString();
+            }
+
+            await axios.post('http://localhost:3001/api/log/save', payload);
 
             await loadSavedEntriesFromDatabase();
             await loadTodayCalories();
