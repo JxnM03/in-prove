@@ -1,9 +1,9 @@
 import React from 'react';
 
 const MEAL_TYPE_LABELS = {
-  Frühstück: 'Breakfast',
-  Mittagessen: 'Lunch',
-  Abendessen: 'Dinner',
+  Breakfast: 'Breakfast',
+  Lunch: 'Lunch',
+  Dinner: 'Dinner',
   Snack: 'Snack'
 };
 

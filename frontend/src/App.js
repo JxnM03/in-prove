@@ -10,11 +10,11 @@ import Settings from './components/Settings';
 import axios from 'axios';
 
 const MEAL_TYPE_LABELS = {
-    Frühstück: 'Breakfast',
-    Mittagessen: 'Lunch',
-    Abendessen: 'Dinner',
+    Breakfast: 'Breakfast',
+    Lunch: 'Lunch',
+    Dinner: 'Dinner',
     Snack: 'Snack',
-    Mahlzeit: 'Meal'
+    Meal: 'Meal'
 };
 
 const getMealTypeLabel = (mealType) => {
@@ -507,7 +507,7 @@ function App() {
     const [awaitingClarification, setAwaitingClarification] = useState(false);
     const [isClarifying, setIsClarifying] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [mealType, setMealType] = useState('Mittagessen');
+    const [mealType, setMealType] = useState('Lunch');
     const [detectedMealType, setDetectedMealType] = useState(null);
     const [mealTypeResolved, setMealTypeResolved] = useState(true);
     const [activeTab, setActiveTab] = useState('track');
@@ -839,9 +839,9 @@ function App() {
                                 value={mealType}
                                 onChange={(e) => handleMealTypeChoice(e.target.value)}
                             >
-                                <option value="Frühstück">Breakfast</option>
-                                <option value="Mittagessen">Lunch</option>
-                                <option value="Abendessen">Dinner</option>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
                                 <option value="Snack">Snack</option>
                             </select>
                         </section>
