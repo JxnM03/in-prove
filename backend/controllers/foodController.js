@@ -50,8 +50,8 @@ const buildFollowupQuestion = (items) => {
         .filter(Boolean);
 
     if (missingItems.length === 0) return null;
-    if (missingItems.length === 1) return `Wie viel ${missingItems[0]} hast du gegessen?`;
-    return `Wie viel ${missingItems.join(' und ')} hast du gegessen?`;
+    if (missingItems.length === 1) return `How much ${missingItems[0]} did you eat?`;
+    return `How much ${missingItems.join(' and ')} did you eat?`;
 };
 
 const findMatchingItemIndex = (items, updatedItem) => {
@@ -113,44 +113,45 @@ const enrichNutrientsIfPossible = async (items) => {
             messages: [
                 {
                     role: 'system',
-                    content: `Du bist ein präziser Sporternährungsassistent mit Expertenwissen über Nährwertdatenbanken.
+                    content: `You are a precise sports nutrition assistant with expert knowledge of nutritional databases.
 
-                    Schätze für jedes Lebensmittel die Nährwerte basierend auf food_item und quantity_grams.
-                    Nutze dabei realistische Referenzwerte aus Nährwertdatenbanken (z.B. USDA, Bundeslebensmittelschlüssel).
+                    Estimate the nutritional values for each food item based on food_item and quantity_grams.
+                    Use realistic reference values from nutrition databases (e.g. USDA FoodData Central).
 
-                    Referenzwerte (pro 100g, gekocht sofern nicht anders angegeben):
-                    - Pasta/Nudeln (gekocht): ~130 kcal, 5g P, 25g C, 1g F
-                    - Reis (gekocht): ~130 kcal, 3g P, 28g C, 0.3g F
-                    - Hähnchenbrust (gegrillt): ~165 kcal, 31g P, 0g C, 3.6g F
-                    - Rinderhackfleisch (gebraten): ~250 kcal, 26g P, 0g C, 17g F
-                    - Lachs (gebraten): ~208 kcal, 20g P, 0g C, 13g F
-                    - Ei (gekocht): ~155 kcal, 13g P, 1g C, 11g F
-                    - Weißbrot/Toast: ~265 kcal, 9g P, 49g C, 3g F
-                    - Vollmilch: ~61 kcal, 3g P, 5g C, 3g F
-                    - Olivenöl: ~884 kcal, 0g P, 0g C, 100g F
+                    Reference values (per 100g, cooked unless stated otherwise):
+                    - Pasta (cooked): ~130 kcal, 5g P, 25g C, 1g F
+                    - Rice (cooked): ~130 kcal, 3g P, 28g C, 0.3g F
+                    - Chicken breast (grilled): ~165 kcal, 31g P, 0g C, 3.6g F
+                    - Ground beef (fried): ~250 kcal, 26g P, 0g C, 17g F
+                    - Salmon (fried): ~208 kcal, 20g P, 0g C, 13g F
+                    - Egg (boiled): ~155 kcal, 13g P, 1g C, 11g F
+                    - White bread/toast: ~265 kcal, 9g P, 49g C, 3g F
+                    - Whole milk: ~61 kcal, 3g P, 5g C, 3g F
+                    - Olive oil: ~884 kcal, 0g P, 0g C, 100g F
                     - Avocado: ~160 kcal, 2g P, 9g C, 15g F
-                    - Banane: ~89 kcal, 1g P, 23g C, 0.3g F
-                    - Mandeln/Nüsse: ~580 kcal, 21g P, 22g C, 50g F
+                    - Banana: ~89 kcal, 1g P, 23g C, 0.3g F
+                    - Almonds/nuts: ~580 kcal, 21g P, 22g C, 50g F
 
-                    Wichtige Regeln:
-                    1. Verändere food_item NICHT.
-                    2. Verändere quantity_grams NICHT.
-                    3. Berechne Nährwerte proportional zur angegebenen Menge.
-                    4. PFLICHT: calories muss IMMER berechnet werden als: protein*4 + carbs*4 + fat*9 (gerundet).
-                    5. Alle Werte müssen positive Zahlen sein – niemals null oder 0 für ein Item mit bekannter Menge.
-                    6. Bei unbekannten Lebensmitteln: schätze anhand ähnlicher bekannter Lebensmittel.
-                    7. Antworte ausschließlich mit gültigem JSON.
+                    Important rules:
+                    1. Do NOT change food_item.
+                    2. Do NOT change quantity_grams.
+                    3. Calculate nutritional values proportionally to the given quantity.
+                    4. REQUIRED: calories must ALWAYS be calculated as: protein*4 + carbs*4 + fat*9 (rounded).
+                    5. All values must be positive numbers – never null or 0 for an item with a known quantity.
+                    6. For unknown foods: estimate based on similar known foods.
+                    7. All food_item names and any text in the response must be written in English, regardless of the input language.
+                    8. Respond exclusively with valid JSON.
 
                     Format:
                     {
                     "items": [
                         {
                         "food_item": "Name",
-                        "quantity_grams": Zahl,
-                        "calories": Zahl,
-                        "protein_grams": Zahl,
-                        "carbs_grams": Zahl,
-                        "fat_grams": Zahl
+                        "quantity_grams": Number,
+                        "calories": Number,
+                        "protein_grams": Number,
+                        "carbs_grams": Number,
+                        "fat_grams": Number
                         }
                     ]
                     }`
@@ -181,8 +182,8 @@ const enrichNutrientsIfPossible = async (items) => {
             };
         });
     } catch (error) {
-        console.error('Nährwertschätzung fehlgeschlagen:', error);
-        return items;
+    console.error('Nutrient estimation failed:', error);
+    return items;
     }
 };
 
@@ -254,48 +255,50 @@ const extractFoodItems = async (req, res) => {
             messages: [
                 {
                     role: 'system',
-                    content: `Du bist ein präziser Ernährungsassistent für Sportler.
+                    content: `You are a precise sports nutrition assistant.
 
-Extrahiere alle Lebensmittel aus dem Text und schätze deren Nährwerte so realistisch wie möglich.
+                        Extract all food items from the text and estimate their nutritional values as realistically as possible.
 
-Regeln für die Extraktion:
-1. Gib jedes Lebensmittel als eigenes Item zurück.
-2. Wenn eine genaue Menge genannt wird, trage sie als quantity_grams ein.
-3. Wenn eine ungefähre Menge genannt wird (z.B. "eine Handvoll", "ein Teller"), schätze eine realistische Grammzahl.
-4. Wenn gar keine Menge erkennbar ist, setze quantity_grams auf null und quantity_unclear auf true.
-5. Berücksichtige die Zubereitungsart für Nährwerte (gegrillt, gekocht, frittiert etc.).
+                        Extraction rules:
+                        1. Return each food item as a separate item.
+                        2. If an exact quantity is stated, enter it as quantity_grams.
+                        3. If only an approximate quantity is given (e.g. "a handful", "a plate"), estimate a realistic gram amount.
+                        4. If no quantity can be determined at all, set quantity_grams to null and quantity_unclear to true.
+                        5. Consider the preparation method for nutritional values (grilled, boiled, fried, etc.).
 
-Regeln für Rückfragen bei fehlenden Mengen:
-- Stelle konkrete, hilfreiche Rückfragen mit Referenzwerten die dem Nutzer die Antwort erleichtern.
-- Gib IMMER 3 Größenoptionen an: klein, mittel, groß mit konkreten Gramm-Angaben.
-- Frage zusätzlich nach der Zubereitungsart wenn sie relevant ist.
-- Beispiel Pasta: "Wie viel Pasta hast du gegessen? Klein (~150g, ca. 195 kcal), Normal (~250g, ca. 325 kcal) oder Groß (~400g, ca. 520 kcal)?"
-- Beispiel Fleisch: "War das Hähnchen gegrillt oder frittiert? Und wie viel – Klein (~100g), Normal (~150g) oder Groß (~200g)?"
-- Frage immer nur nach dem wichtigsten fehlenden Item zuerst.
-- Bei Nudeln, Reis, Hülsenfrüchten und anderen Lebensmitteln die Wasser aufnehmen: frage IMMER ob das Trocken- oder Kochgewicht gemeint ist, da sich die Kalorien stark unterscheiden.
-- Beispiel: "War das Trockengewicht (aus der Packung) oder das Gewicht nach dem Kochen? 250g Trocken (~880 kcal) vs. 250g Gekocht (~325 kcal)."
+                        Rules for follow-up questions when quantities are missing:
+                        - Ask concrete, helpful follow-up questions with reference values that make it easy for the user to answer.
+                        - ALWAYS give 3 size options: small, medium, large with concrete gram amounts.
+                        - Additionally ask about the preparation method if relevant.
+                        - Example pasta: "How much pasta did you eat? Small (~150g, approx. 195 kcal), Medium (~250g, approx. 325 kcal) or Large (~400g, approx. 520 kcal)?"
+                        - Example meat: "Was the chicken grilled or fried? And how much – Small (~100g), Medium (~150g) or Large (~200g)?"
+                        - Always ask about only the most important missing item first.
+                        - For pasta, rice, legumes and other foods that absorb water: ALWAYS ask whether dry weight or cooked weight is meant, since the calories differ significantly.
+                        - Example: "Was that the dry weight (from the package) or the weight after cooking? 250g dry (~880 kcal) vs. 250g cooked (~325 kcal)."
 
-Regeln für Nährwerte:
-- Schätze calories, protein_grams, carbs_grams, fat_grams realistisch.
-- Kalorien müssen konsistent sein: calories ≈ protein*4 + carbs*4 + fat*9
+                        Rules for nutritional values:
+                        - Estimate calories, protein_grams, carbs_grams, fat_grams realistically.
+                        - Calories must be consistent: calories ≈ protein*4 + carbs*4 + fat*9
 
-Antworte ausschließlich mit gültigem JSON:
-{
-  "items": [
-    {
-      "food_item": "Name des Lebensmittels (inkl. Zubereitungsart)",
-      "quantity_grams": Zahl oder null,
-      "calories": Zahl oder null,
-      "protein_grams": Zahl oder null,
-      "carbs_grams": Zahl oder null,
-      "fat_grams": Zahl oder null,
-      "quantity_unclear": true oder false
-    }
-  ],
-  "detected_meal_type": "Frühstück" oder "Mittagessen" oder "Abendessen" oder "Snack" oder null,
-  "all_quantities_clear": true oder false,
-  "followup_question": "Konkrete Rückfrage mit Referenzwerten falls Mengen unklar, sonst null"
-}`
+                        IMPORTANT: Regardless of the language the user writes or speaks in, ALWAYS respond in English. All food_item names, follow-up questions and any other text must be in English.
+
+                        Respond exclusively with valid JSON:
+                        {
+                        "items": [
+                            {
+                            "food_item": "Name of the food item (including preparation method)",
+                            "quantity_grams": Number or null,
+                            "calories": Number or null,
+                            "protein_grams": Number or null,
+                            "carbs_grams": Number or null,
+                            "fat_grams": Number or null,
+                            "quantity_unclear": true or false
+                            }
+                        ],
+                        "detected_meal_type": "Breakfast" or "Lunch" or "Dinner" or "Snack" or null,
+                        "all_quantities_clear": true or false,
+                        "followup_question": "Concrete follow-up question with reference values if quantities are unclear, otherwise null"
+                        }`
                 },
                 { role: 'user', content: transcript }
             ],
@@ -325,42 +328,43 @@ const clarifyQuantities = async (req, res) => {
             messages: [
                 {
                     role: 'system',
-                    content: `Du bist ein präziser Ernährungsassistent für Sportler.
+                    content: `You are a precise sports nutrition assistant.
 
-Der Nutzer hat bereits folgende Lebensmittel genannt:
-${JSON.stringify(previousItems, null, 2)}
+                        The user has already mentioned the following food items:
+                        ${JSON.stringify(previousItems, null, 2)}
 
-Der Nutzer antwortet jetzt auf eine Rückfrage. Aktualisiere die Einträge entsprechend.
+                        The user is now answering a follow-up question about missing or unclear quantities.
 
-Regeln:
-1. Gib IMMER alle bisherigen Lebensmittel zurück – lösche nichts.
-2. Aktualisiere nur Items, für die der Nutzer jetzt eine Antwort gibt.
-3. Behalte vorhandene klare Mengen und Nährwerte unverändert.
-4. Wenn der Nutzer eine Menge nennt, aktualisiere quantity_grams und schätze alle Nährwerte neu.
-5. Wenn der Nutzer die Zubereitungsart nennt (z.B. "gegrillt"), aktualisiere food_item und Nährwerte entsprechend.
-6. Berücksichtige die Zubereitungsart für präzise Nährwertschätzungen.
-7. Kalorien müssen konsistent sein: calories ≈ protein*4 + carbs*4 + fat*9
-8. Wenn noch Mengen fehlen, stelle eine konkrete Rückfrage mit Referenzwerten.
-9. Beispiel Rückfrage: "War der Reis gekocht oder war das Trockengewicht? Eine typische Portion gekochter Reis sind ~150-200g."
-10. Antworte ausschließlich mit gültigem JSON.
+                        Rules:
+                        1. ALWAYS return all previous food items – delete nothing.
+                        2. Only update items for which the user is now providing an answer.
+                        3. Keep existing clear quantities and nutritional values unchanged.
+                        4. If the user states a quantity, update quantity_grams and re-estimate all nutritional values.
+                        5. If the user mentions the preparation method (e.g. "grilled"), update food_item and nutritional values accordingly.
+                        6. Consider the preparation method for precise nutritional estimates.
+                        7. Calories must be consistent: calories ≈ protein*4 + carbs*4 + fat*9
+                        8. If quantities are still missing, ask a concrete follow-up question with reference values.
+                        9. Example follow-up: "Was the rice cooked or was that the dry weight? A typical portion of cooked rice is ~150-200g."
+                        10. IMPORTANT: Regardless of the language the user writes or speaks in, ALWAYS respond in English. All food_item names, follow-up questions and any other text must be in English.
+                        11. Respond exclusively with valid JSON.
 
-Format:
-{
-  "items": [
-    {
-      "food_item": "Name (inkl. Zubereitungsart)",
-      "quantity_grams": Zahl oder null,
-      "calories": Zahl oder null,
-      "protein_grams": Zahl oder null,
-      "carbs_grams": Zahl oder null,
-      "fat_grams": Zahl oder null,
-      "quantity_unclear": true oder false
-    }
-  ],
-  "detected_meal_type": null,
-  "all_quantities_clear": true oder false,
-  "followup_question": "Konkrete Rückfrage mit Referenzwerten oder null"
-}`
+                        Format:
+                        {
+                        "items": [
+                            {
+                            "food_item": "Name (including preparation method)",
+                            "quantity_grams": Number or null,
+                            "calories": Number or null,
+                            "protein_grams": Number or null,
+                            "carbs_grams": Number or null,
+                            "fat_grams": Number or null,
+                            "quantity_unclear": true or false
+                            }
+                        ],
+                        "detected_meal_type": null,
+                        "all_quantities_clear": true or false,
+                        "followup_question": "Concrete follow-up question with reference values or null"
+                        }`
                 },
                 { role: 'user', content: transcript }
             ],
