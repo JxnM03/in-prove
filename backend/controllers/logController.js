@@ -31,25 +31,20 @@ const savefoodLog = async (req, res) => {
         const savedItems = [];
 
         for (const item of items) {
-            const result = await pool.query(
-                `INSERT INTO food_logs 
+            // Nur logged_at in Query aufnehmen wenn es explizit übergeben wurde
+            const queryText = logged_at
+                ? `INSERT INTO food_logs 
                     (athlete_id, meal_type, food_item, quantity_grams, calories, protein_grams, carbs_grams, fat_grams, raw_transcript, logged_at)
-                VALUES 
-                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                RETURNING *`,
-                [
-                    athlete_id || null,
-                    meal_type || null,
-                    item.food_item,
-                    item.quantity_grams || null,
-                    item.calories || null,
-                    item.protein_grams || null,
-                    item.carbs_grams || null,
-                    item.fat_grams || null,
-                    raw_transcript || null,
-                    logged_at || null
-                ]
-            );
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`
+                : `INSERT INTO food_logs 
+                    (athlete_id, meal_type, food_item, quantity_grams, calories, protein_grams, carbs_grams, fat_grams, raw_transcript)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
+
+            const queryParams = logged_at
+                ? [athlete_id || null, meal_type || null, item.food_item, item.quantity_grams || null, item.calories || null, item.protein_grams || null, item.carbs_grams || null, item.fat_grams || null, raw_transcript || null, logged_at]
+                : [athlete_id || null, meal_type || null, item.food_item, item.quantity_grams || null, item.calories || null, item.protein_grams || null, item.carbs_grams || null, item.fat_grams || null, raw_transcript || null];
+
+            const result = await pool.query(queryText, queryParams);
             savedItems.push(result.rows[0]);
         }
 
