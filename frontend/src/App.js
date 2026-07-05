@@ -81,7 +81,7 @@ const formatDbLogsToEntries = (rows) => {
     rows.forEach((row) => {
         const key = buildMealGroupKey(row);
         if (!groups.has(key)) {
-            const sortTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
+            const sortTime = row.logged_at ? new Date(row.logged_at).getTime() : Date.now();
             groups.set(key, {
                 id: key,
                 logIds: [],
@@ -108,7 +108,7 @@ const formatDbLogsToEntries = (rows) => {
         });
         group.totalCalories += Number(row.calories) || 0;
 
-        const rowTime = row.logged_at ? new Date(row.logged_at).getTime() : 0;
+        const rowTime = row.logged_at ? new Date(row.logged_at).getTime() : Date.now();
         if (rowTime > group.sortTime) {
             group.sortTime = rowTime;
             group.createdAt = formatDateTime(row.logged_at);

@@ -41,7 +41,6 @@ function Login({ onLogin }) {
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            placeholder="e.g. athlete1"
                             disabled={isLoading}
                         />
                     </div>
@@ -53,7 +52,6 @@ function Login({ onLogin }) {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
                             disabled={isLoading}
                         />
                     </div>
@@ -71,12 +69,6 @@ function Login({ onLogin }) {
                     >
                         {isLoading ? 'Logging in...' : 'Login'}
                     </button>
-                </div>
-
-                <div className="login-demo-hint">
-                    <p>Demo accounts:</p>
-                    <p>athlete1 / password</p>
-                    <p>athlete2 / password</p>
                 </div>
             </div>
         </div>
