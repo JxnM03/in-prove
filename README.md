@@ -83,7 +83,6 @@ Open `.env` and fill in your own values:
 OPENAI_API_KEY=your-openai-api-key-here
 PORT=3001
 DATABASE_URL=postgresql://postgres:your-postgres-password@localhost:5432/inprove
-JWT_SECRET=your-secret-key-here
 ```
 
 ### 5. Set up the database
